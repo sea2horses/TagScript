@@ -101,6 +101,10 @@ namespace TagScript.models {
             return identifierName;
         }
 
+        // string ReadExpression() {
+
+        // }
+
         public List<Token> Parse() {
             List<Token> returnList = new();
 

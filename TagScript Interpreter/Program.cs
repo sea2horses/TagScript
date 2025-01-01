@@ -4,7 +4,16 @@ using TagScript.models;
 
 static class Program {
     static void Main(string[] args) {
-        string sourceCode = "";
+        string sourceCode = "<output>\"Hello World!\"</output>";
+        if(args.Length != 0) {
+            FileStream fStream = new FileStream(args[0], FileMode.Open);
+            StreamReader reader = new StreamReader(fStream);
+
+            sourceCode = reader.ReadToEnd();
+
+            reader.Close();
+            fStream.Close();
+        }
 
         Console.WriteLine($"Source Code: {sourceCode}");
 

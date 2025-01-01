@@ -1,0 +1,2 @@
+namespace TagScript.models { 
+}
