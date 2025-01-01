@@ -3,13 +3,9 @@ using System;
 using TagScript.models;
 
 static class Program {
-    static void Main() {
-        string sourceCode =
-@"
-# This is for declaring a constant variable
-<variable type=""int"" name=""test"" value=""5.0"" constant/>
-# This is the output field
-<output>""I'm ""<get type=""variable"" name=""test""/>"" year's old!""</output>";
+    static void Main(string[] args) {
+        string sourceCode = "";
+
         Console.WriteLine($"Source Code: {sourceCode}");
 
         Tokenizer tokenizer = new(sourceCode);

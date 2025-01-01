@@ -12,3 +12,4 @@ D:\Documents\C# Workspace\TagScript\TagScript Interpreter\obj\Debug\net8.0\refin
 D:\Documents\C# Workspace\TagScript\TagScript Interpreter\obj\Debug\net8.0\TagScript Interpreter.pdb
 D:\Documents\C# Workspace\TagScript\TagScript Interpreter\obj\Debug\net8.0\TagScript Interpreter.genruntimeconfig.cache
 D:\Documents\C# Workspace\TagScript\TagScript Interpreter\obj\Debug\net8.0\ref\TagScript Interpreter.dll
+D:\Documents\C# Workspace\TagScript\TagScript Interpreter\obj\Debug\net8.0\TagScript Interpreter.sourcelink.json
