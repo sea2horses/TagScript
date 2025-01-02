@@ -22,7 +22,8 @@ namespace TagScript.models {
             {"lit-text", TagType.LITERAL_TEXT},
             {"output", TagType.OUTPUT},
             {"br", TagType.BREAK},
-            {"variable", TagType.VARIABLE}
+            {"variable", TagType.VARIABLE},
+            {"get", TagType.GET}
         };
 
         public string TagName { get; }
@@ -48,12 +49,17 @@ namespace TagScript.models {
         public bool AttributeExists(string name) {
             return this.Attributes.TryGetValue(name, out _);
         }
-        public bool AttributeExists(string name, out string value) {
-            string? return_value;
-            bool exists = this.Attributes.TryGetValue(name, out return_value);
-                value = (return_value is null) ? "" : return_value;
-            return exists;
 
+        public string GetAttribute(string name) {
+            if(!this.Attributes.TryGetValue(name, out string? value))
+                throw new Exception("Tag '{Name}' is missing attribute '{name}'");
+            
+            return value ?? "";
+        }
+
+        public string? GetOptionalAttribute(string name) {
+            this.Attributes.TryGetValue(name, out string? value);
+            return value;
         }
     }
 

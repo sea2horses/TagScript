@@ -1,4 +1,5 @@
-<output>
-    <lit-text body="Hello World!"/>
+<variable name="MyBool" type="boolean" value="true"/>
+<output no-autobreak>
+    "This has been confirmed by real american patriots as "
+    <get name="MyBool"/>
 </output>
-<variable name="string" type="number" value="2"/>

@@ -1,45 +1,49 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 
 namespace TagScript.models {
 
-    public enum DataType {
-        NUMBER,
-        STRING,
-        BOOLEAN
-    }
-
     class Variable {
-        public object? Value { get; private set; } = null;
-        public DataType Type { get; private set; }
+        private DataTypes.BaseDataType _valueHolder;
+        public object Value { get => _valueHolder.Get(); }
+        public bool Set { get; private set; }
+        public DataType Type { get => _valueHolder.Type(); }
         public string Name { get; private set; }
 
-        public Variable(string name, DataType type, object? value = null) {
+        public Variable(string name, DataType type, string? value) {
             Name = name;
-            Type = type;
-            Value = value;
+            SetValueHolder(value, type);
+            Set = true;
         }
 
-        public void SetValue(string value) {
+        public Variable(string name, DataType type)
+            : this(name, type, null) {
+                Set = false;
+        }
+
+        [MemberNotNull(nameof(_valueHolder))]
+        void SetValueHolder(string? value, DataType type) {
             // Switch of the type
-            switch(Type) {
+            switch(type) {
                 // In case it's a string
                 case(DataType.STRING): {
-                    Value = value;
+                    _valueHolder = new DataTypes.DTString(value ?? "");
                     break;
                 }
                 // In case it's a number
                 case(DataType.NUMBER): {
-                    if(!double.TryParse(value, out double parsedValue))
+                    if(!double.TryParse(value ?? default(double).ToString(), out double parsedValue))
                         throw new Exception($"variable {Name} cannot parse '{value}' to type {Type}");
-                    Value = parsedValue;
+                    _valueHolder = new DataTypes.DTNumber(parsedValue);
                     break;
                 }
                 // In case it's a boolean
                 case(DataType.BOOLEAN): {
-                    if(!bool.TryParse(value, out bool parsedValue))
+                    if(!bool.TryParse(value ?? default(bool).ToString(), out bool parsedValue))
                         throw new Exception($"variable {Name} cannot parse '{value}' to type {Type}");
-                    Value = parsedValue;
+                    _valueHolder = new DataTypes.DTBoolean(parsedValue);
                     break;
                 }
                 // In case it's another value
@@ -49,9 +53,22 @@ namespace TagScript.models {
             }
         }
 
+        public DataTypes.BaseDataType GetAsExpression() {
+            if(!Set)
+                throw new Exception($"Trying to access variable {Name} while it is unset");
+            return _valueHolder.Clone();
+        }
+
+        public void SetValue(string value) {
+            // Set value with fixed type
+            SetValueHolder(value, Type);
+            // Set is now true
+            Set = true;
+        }
+
         public override string ToString()
         {
-            return (Value is null) ? $"{Type} {Name}" : $"{Type} {Name} = {Value}";
+            return Set ? $"{Type} {Name} = {Value}" : $"{Type} {Name} ?";
         }
     }
 
@@ -71,7 +88,7 @@ namespace TagScript.models {
                 switch(tag.Type) {
                     // If it's an output tag, run it
                     case(TagType.OUTPUT): {
-                        tagRunner.RunOutputTag(tag);
+                        tagRunner.RunOutputTag(tag, variables);
                         break;
                     }
                     // If it's a variable tag, run it
@@ -84,12 +101,7 @@ namespace TagScript.models {
         }
 
         class TagRunner() {
-            public Dictionary<string, DataType> dataTypeBindings = new() {
-                {"string", DataType.STRING},
-                {"number", DataType.NUMBER},
-                {"boolean", DataType.BOOLEAN}
-            };
-            public void RunOutputTag(Tag outputTag) {
+            public void RunOutputTag(Tag outputTag, List<Variable> scope) {
                 // If the no-autobreak attribute doesn't exist, set autobreak to true
                 bool autobreak = !outputTag.AttributeExists("no-autobreak");
                 // Go foreach tag in the body
@@ -98,12 +110,11 @@ namespace TagScript.models {
                         // If it's literal text, print it to the console
                         case(TagType.LITERAL_TEXT): {
                             // If the <lit-text/> tag doesn't have a body, throw an exception
-                            if(!tag.AttributeExists("body", out string body))
-                                throw new Exception("lit-text has no 'body' attribute");
+                            string body = tag.GetAttribute("body");
                             // Print the body
                             Console.Write(body);
                             // If autobreak is on, add a line break
-                            Console.WriteLine();
+                            if(autobreak) Console.WriteLine();
 
                             break;
                         }
@@ -111,13 +122,24 @@ namespace TagScript.models {
                         case(TagType.BREAK): {
                             int amount = 1;
                             // Try to get the amount attribute
-                            if(tag.AttributeExists("amount", out string amountString)) {
+                            string? amountString = tag.GetOptionalAttribute("amount");
+                            if(amountString is not null) {
                                 if(!int.TryParse(amountString, out amount) || amount <= 0)
                                     throw new Exception("br's 'amount' attribute must be a valid integer");
                             }
                             // Print the requested amount
                             for(int i = 0; i < amount; i++) Console.Write('\n');
 
+                            break;
+                        }
+                        // If it's a get tag, let's get the var
+                        case(TagType.GET): {
+                            DataTypes.BaseDataType getData = RunGetTag(tag, scope);
+                            // Print it with no arguments
+                            Console.WriteLine(getData.Format([]));
+                            // If autobreak is on add a line brea
+                            if(autobreak) Console.WriteLine();
+                            
                             break;
                         }
                         // Else print a generic exception
@@ -130,24 +152,12 @@ namespace TagScript.models {
 
             public void RunVariableTag(Tag varTag, List<Variable> scope) {
                 // Required attributes
-                string name, type;
+                string name = varTag.GetAttribute("name"), type = varTag.GetAttribute("type");
                 // Non-required attributes
-                string? value;
-
-                // Check if the name attribute exists
-                if(!varTag.AttributeExists("name", out name))
-                    throw new Exception("variable tag has no 'name' attribute");
-                
-                // Check if the type attribute exists
-                if(!varTag.AttributeExists("type", out type))
-                    throw new Exception("variable tag has no 'type' attribute");
-                
-                // Check if the value attribute exists
-                if(!varTag.AttributeExists("value", out value))
-                    value = null;
+                string? value = varTag.GetOptionalAttribute("value");
 
                 // Is it a valid type?
-                if(!dataTypeBindings.TryGetValue(type, out DataType parsedDataType))
+                if(!DataTypes.dataTypeBindings.TryGetValue(type, out DataType parsedDataType))
                     throw new Exception($"{type} is not a valid datatype");
                 
                 // Is the name not occupied?
@@ -162,6 +172,27 @@ namespace TagScript.models {
 
                 // Add the variable to the scope
                 scope.Add(newVar);
+            }
+
+            public DataTypes.BaseDataType RunGetTag(Tag getTag, List<Variable> scope) {
+                // Get the necessary attribute
+                string lookupName = getTag.GetAttribute("name");
+                // Look for the variable in the scope
+                Variable? returnVariable = null;
+                // ForEach
+                foreach(Variable variable in scope) {
+                    if(variable.Name == lookupName) {
+                        returnVariable = variable;
+                        break;
+                    }
+                }
+                // If we didn't find it, go fuck yourself
+                if(returnVariable is null)
+                    throw new Exception($"No variable named {lookupName} in the current scope");
+                // Else, let's get it
+                DataTypes.BaseDataType resultingExpression = returnVariable.GetAsExpression();
+                // Return the thing
+                return resultingExpression;
             }
         }
     }
