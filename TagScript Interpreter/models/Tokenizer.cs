@@ -72,7 +72,7 @@ namespace TagScript.models {
             // Refresh
             char ch = SourceCode[Position]; 
             // While the character isn't another "
-            while(ch != '"' && Position < SourceCode.Length) {
+            while(!ch.Equals('"') && Position < SourceCode.Length) {
                 stringLiteral += ch;
                 Pass();
                 ch = SourceCode[Position];

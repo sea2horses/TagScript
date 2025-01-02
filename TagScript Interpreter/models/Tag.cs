@@ -2,8 +2,31 @@ using System;
 using System.Drawing;
 
 namespace TagScript.models {
+
+    public enum TagType {
+        UNIVERSAL,
+        INPUT,
+        OUTPUT,
+        LITERAL_TEXT,
+        VARIABLE,
+        CONSTANT,
+        GET,
+        EVALUATE,
+        BREAK
+    }
+
+
     public class Tag {
+
+        static Dictionary<string, TagType> tagBindings = new(){
+            {"lit-text", TagType.LITERAL_TEXT},
+            {"output", TagType.OUTPUT},
+            {"br", TagType.BREAK},
+            {"variable", TagType.VARIABLE}
+        };
+
         public string TagName { get; }
+        public TagType Type { get; private set; } = TagType.UNIVERSAL;
         public Dictionary<string, string> Attributes { get; }
         public List<Tag> Body { get; }
 
@@ -11,6 +34,9 @@ namespace TagScript.models {
             this.TagName = tagName;
             this.Attributes = attributes;
             this.Body = body;
+
+            if(tagBindings.TryGetValue(TagName, out TagType type))
+                this.Type = type;
         }
 
         public Tag(string tagName, List<Tag> body) : this(tagName, [], body) {}
@@ -18,6 +44,17 @@ namespace TagScript.models {
         public Tag(string tagName, Dictionary<string, string> attributes) : this(tagName, attributes, []) {}
 
         public Tag(string tagName) : this(tagName, [], []) {}
+
+        public bool AttributeExists(string name) {
+            return this.Attributes.TryGetValue(name, out _);
+        }
+        public bool AttributeExists(string name, out string value) {
+            string? return_value;
+            bool exists = this.Attributes.TryGetValue(name, out return_value);
+                value = (return_value is null) ? "" : return_value;
+            return exists;
+
+        }
     }
 
     public class TagFormatter {

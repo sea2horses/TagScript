@@ -15,7 +15,7 @@ static class Program {
             fStream.Close();
         }
 
-        Console.WriteLine($"Source Code: {sourceCode}");
+        Console.WriteLine($"Source Code: \n{sourceCode}");
 
         Tokenizer tokenizer = new(sourceCode);
         List<Token> tokenList = tokenizer.Parse();
@@ -28,10 +28,19 @@ static class Program {
         TagParser tagParser = new(tokenList);
         Console.WriteLine("\n\nTag Parsing Output:\n");
         List<Tag> tagList = tagParser.ParseList();
+        Tag masterTag = new Tag("program", tagList);
 
         Console.WriteLine("\n\nTag Tree:");
-        foreach(Tag tag in tagList) {
-            TagFormatter.DisplayTag(tag);
+        TagFormatter.DisplayTag(masterTag); 
+
+        Console.WriteLine("\n\nRunner Output:");
+        TagScriptInterpreter tagx = new(masterTag);
+
+        tagx.Run();
+
+        Console.WriteLine("\n\nVariable dump:");
+        foreach(Variable var in tagx.variables) {
+            Console.WriteLine(var);
         }
     }
 }

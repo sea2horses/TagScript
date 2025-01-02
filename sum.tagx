@@ -1,0 +1,24 @@
+<program>
+    # Declare variables
+    <variable name="num1" type="int"/>
+    <variable name="num2" type="int"/>
+    <variable name="result" type="int"/>
+
+    # Input prompts
+    <input prompt="Enter first number:" save="num1"/>
+    <input prompt="Enter second number:" save="num2"/>
+
+    # Perform the operation
+    <operation save="result">
+        <add>
+            <get name="num1"/>
+            <get name="num2"/>
+        </add>
+    </operation>
+
+    # Output the result
+    <output>
+        "The sum is: "
+        <get name="result"/>
+    </output>
+</program>
