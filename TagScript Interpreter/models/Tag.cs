@@ -12,9 +12,19 @@ namespace TagScript.models {
         CONSTANT,
         GET,
         EVALUATE,
-        BREAK
+        BREAK,
+        OPERATIVE
     }
 
+    public enum OperativeTagType {
+        SUM,
+        SUBTRACT,
+        MULTIPLY,
+        DIVIDE,
+        RAISE,
+        ROOT,
+        MODULO
+    }
 
     public class Tag {
 
@@ -23,7 +33,19 @@ namespace TagScript.models {
             {"output", TagType.OUTPUT},
             {"br", TagType.BREAK},
             {"variable", TagType.VARIABLE},
-            {"get", TagType.GET}
+            {"get", TagType.GET},
+            {"input", TagType.INPUT},
+            {"eval", TagType.EVALUATE},
+            {"add", TagType.OPERATIVE}
+        };
+
+        static Dictionary<string, OperativeTagType> operativeBindings = new(){
+            {"add", OperativeTagType.SUM},
+            {"subtract", OperativeTagType.SUBTRACT},
+            {"multiply", OperativeTagType.MULTIPLY},
+            {"divide", OperativeTagType.DIVIDE},
+            {"raise", OperativeTagType.RAISE},
+            {"modulo", OperativeTagType.MODULO}
         };
 
         public string TagName { get; }
@@ -60,6 +82,12 @@ namespace TagScript.models {
         public string? GetOptionalAttribute(string name) {
             this.Attributes.TryGetValue(name, out string? value);
             return value;
+        }
+
+        public OperativeTagType? OperativeType(string name) {
+            if(operativeBindings.TryGetValue(name, out OperativeTagType type))
+                return type;
+            return null;
         }
     }
 

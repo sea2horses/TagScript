@@ -22,6 +22,9 @@ namespace TagScript.models {
             
             public static DTNumber Add(DTBoolean L, DTBoolean R)
                 => new DTNumber((L.Value ? 1 : 0) + (R.Value ? 1 : 0));
+            
+            public static DTString Add(DTString L, DTString R)
+                => new DTString(L.Value + R.Value);
         }
 
         public static BaseDataType Add(BaseDataType L, BaseDataType R) {
@@ -44,6 +47,11 @@ namespace TagScript.models {
                 {
                     (DataType.BOOLEAN, DataType.BOOLEAN),
                     (a,b) => AddDataTypes.Add( (DTBoolean) a, (DTBoolean) b)
+                },
+                // Two strings
+                {
+                    (DataType.STRING, DataType.STRING),
+                    (a,b) => AddDataTypes.Add( (DTString) a, (DTString) b)
                 }
             };
 
@@ -65,6 +73,11 @@ namespace TagScript.models {
             public abstract object Get();
             public abstract string Format(string[] args);
             public abstract BaseDataType Clone();
+            public BaseDataType Assert(DataType type) {
+                if(type != Type())
+                    throw new Exception($"Was expecting {Type()} but got {type}");
+                return this;
+            }
         }
 
         public class DTNumber : BaseDataType {

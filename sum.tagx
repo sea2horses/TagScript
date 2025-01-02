@@ -1,24 +1,22 @@
-<program>
     # Declare variables
-    <variable name="num1" type="int"/>
-    <variable name="num2" type="int"/>
-    <variable name="result" type="int"/>
+    <variable name="num1" type="number"/>
+    <variable name="num2" type="number"/>
+    <variable name="result" type="number"/>
 
     # Input prompts
-    <input prompt="Enter first number:" save="num1"/>
-    <input prompt="Enter second number:" save="num2"/>
+    <input prompt="Enter first number:" save-to="num1"/>
+    <input prompt="Enter second number:" save-to="num2"/>
 
     # Perform the operation
-    <operation save="result">
+    <eval save-to="result">
         <add>
             <get name="num1"/>
             <get name="num2"/>
         </add>
-    </operation>
+    </eval>
 
     # Output the result
     <output>
         "The sum is: "
         <get name="result"/>
     </output>
-</program>

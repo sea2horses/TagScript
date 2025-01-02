@@ -1,5 +1,10 @@
-<variable name="MyBool" type="boolean" value="true"/>
-<output no-autobreak>
-    "This has been confirmed by real american patriots as "
-    <get name="MyBool"/>
+<variable type="string" name="concat-test"/>
+<eval save-to="concat-test">
+    <add>
+        "Hello everyone! "
+        "How are you?"
+    </add>
+</eval>
+<output>
+    <get name="concat-test"/>
 </output>
