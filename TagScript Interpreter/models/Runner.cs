@@ -219,6 +219,16 @@ namespace TagScript.models {
                             
                             break;
                         }
+                        // If it's an operative tag, run it and format the result
+                        case(TagType.OPERATIVE): {
+                            DataTypes.DTGeneric getData = RunOperativeTag(tag, scope);
+                            // Print it
+                            Console.WriteLine(getData.Format([]));
+                            // If autobreak
+                            if(autobreak) Console.WriteLine();
+
+                            break;
+                        }
                         // Else print a generic exception
                         default: {
                             throw new Exception($"Tag '{tag.TagName}' is either not supported by the output tag or does not exist");
@@ -362,44 +372,32 @@ namespace TagScript.models {
                 return operands;
             }
 
-            public DataTypes.DTGeneric RunAddTag(Tag addTag, List<Variable> scope) {
-                // Get the amount of tag in its body
-                int operandAmount = addTag.Body.Count;
-                // There must be only two operands 
-                if(operandAmount != 2)
-                    throw new Exception("An add tag must have exactly 2 operands");
-                // Else, let's go
-                DataTypes.DTGeneric[] operands = CatchOperands(addTag, scope);
-                // Now let's add!
-                DataTypes.DTGeneric result = DataTypes.TypeOperations.Add(operands[0], operands[1]);
-                // Return the result
-                return result;
-            }
-
-            public DataTypes.DTGeneric RunCompareTag(Tag equalsTag, List<Variable> scope) {
-                // Get the amount of tag in its body
-                int operandAmount = equalsTag.Body.Count;
-                // There must be only two operands 
-                if(operandAmount != 2)
-                    throw new Exception("A compare tag must have exactly 2 operands");
-                // Else, let's go
-                DataTypes.DTGeneric[] operands = CatchOperands(equalsTag, scope);
-                // Now let's add!
-                DataTypes.DTGeneric result = DataTypes.TypeOperations.Equals(operands[0], operands[1]);
-                // Return the result
-                return result;
-            }
-
-            public DataTypes.DTGeneric RunNegateTag(Tag negateTag, List<Variable> scope) {
+            public DataTypes.DTGeneric RunBinaryTag(Tag binaryTag, List<Variable> scope,
+                Func<DataTypes.DTGeneric, DataTypes.DTGeneric, DataTypes.DTGeneric> function) {
                 // Get the amount of tags in its body
-                int operandAmount = negateTag.Body.Count;
+                int operandAmount = binaryTag.Body.Count;
+                // There must be only one operand
+                if(operandAmount != 2)
+                    throw new Exception($"A {binaryTag.TagName} tag must have exactly 2 operands");
+                // Else, let's go
+                DataTypes.DTGeneric[] operands = CatchOperands(binaryTag, scope);
+                // Now let's negate
+                DataTypes.DTGeneric result = function(operands[0], operands[1]);
+                // Return the result
+                return result;
+            }
+
+            public DataTypes.DTGeneric RunUnaryTag(Tag unaryTag, List<Variable> scope,
+                Func<DataTypes.DTGeneric, DataTypes.DTGeneric> function) {
+                // Get the amount of tags in its body
+                int operandAmount = unaryTag.Body.Count;
                 // There must be only one operand
                 if(operandAmount != 1)
-                    throw new Exception("A negate tag must have exactly 1 operand");
+                    throw new Exception($"A {unaryTag.TagName} tag must have exactly 1 operand");
                 // Else, let's go
-                DataTypes.DTGeneric[] operands = CatchOperands(negateTag, scope);
+                DataTypes.DTGeneric[] operands = CatchOperands(unaryTag, scope);
                 // Now let's negate
-                DataTypes.DTGeneric result = DataTypes.TypeOperations.Negate(operands[0]);
+                DataTypes.DTGeneric result = function(operands[0]);
                 // Return the result
                 return result;
             }
@@ -413,32 +411,23 @@ namespace TagScript.models {
                 // If it's not an operative type, throw an exception
                 if(operativeType is null)
                     throw new Exception($"Tag {operativeTag} is not bound to an operative type, therefore it is not supported for operating");
-                // Result variable
-                DataTypes.DTGeneric result;
                 // Else, let's do a switch
                 switch(operativeType) {
                     // In case it's a sum tag
-                    case (OperativeTagType.SUM): {
-                        result = RunAddTag(operativeTag, scope);
-                        break;
-                    }
-                    // In case it's an equals
-                    case (OperativeTagType.EQUALS): {
-                        result = RunCompareTag(operativeTag, scope);
-                        break;
-                    }
-                    // If it's a negates
-                    case (OperativeTagType.NEGATE): {
-                        result = RunNegateTag(operativeTag, scope);
-                        break;
-                    }
+                    case (OperativeTagType.SUM): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Add);
+                    case (OperativeTagType.SUBTRACT): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Subtract);
+                    case (OperativeTagType.MULTIPLY): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Multiply);
+                    case (OperativeTagType.DIVIDE): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Divide);
+                    case (OperativeTagType.MODULO): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Modulo);
+                    case (OperativeTagType.RAISE): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Power);
+                    case (OperativeTagType.ROOT): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Root);
+                    case (OperativeTagType.EQUALS): return RunBinaryTag(operativeTag, scope, DataTypes.TypeOperations.Equals);
+                    case (OperativeTagType.NEGATE): return RunUnaryTag(operativeTag, scope, DataTypes.TypeOperations.Negate);
                     // Else, except
                     default: {
                         throw new Exception($"Tag {operativeTag} is not yet supported by eval");
                     }
                 }
-                // Return the result
-                return result;
             }
 
             public DataTypes.DTGeneric RunEvalTag(Tag evalTag, List<Variable> scope) {

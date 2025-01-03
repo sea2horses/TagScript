@@ -32,7 +32,9 @@ namespace TagScript.models {
         ROOT,
         MODULO,
         EQUALS,
-        NEGATE
+        NEGATE,
+        OR,
+        AND,
     }
 
     public class Tag {
@@ -40,11 +42,16 @@ namespace TagScript.models {
         static Dictionary<string, TagType> tagBindings = new(){
             {"text-lit", TagType.LITERAL_TEXT},
             {"number-lit", TagType.LITERAL_NUMBER},
+            {"txt", TagType.LITERAL_TEXT}, // Shorthand for Text Literal
+            {"num", TagType.LITERAL_NUMBER}, // Shorthand for Number Literal
             {"output", TagType.OUTPUT},
+            {"out", TagType.OUTPUT}, // Shorthand for Output
             {"br", TagType.BREAK},
             {"variable", TagType.VARIABLE},
+            {"var", TagType.VARIABLE},
             {"get", TagType.GET},
             {"input", TagType.INPUT},
+            {"in",TagType.INPUT},
             {"if", TagType.IF},
             {"elif", TagType.ELSEIF},
             {"else", TagType.ELSE},
@@ -52,7 +59,15 @@ namespace TagScript.models {
             {"condition", TagType.CONDITION},
             {"eval", TagType.EVALUATE},
             {"add", TagType.OPERATIVE},
+            {"subtract",TagType.OPERATIVE},
+            {"multiply",TagType.OPERATIVE},
+            {"divide", TagType.OPERATIVE},
+            {"raise",TagType.OPERATIVE},
+            {"root", TagType.OPERATIVE},
+            {"modulo",TagType.OPERATIVE},
             {"compare", TagType.OPERATIVE},
+            {"or", TagType.OPERATIVE},
+            {"and", TagType.OPERATIVE},
             {"negate", TagType.OPERATIVE}
         };
 
@@ -62,6 +77,7 @@ namespace TagScript.models {
             {"multiply", OperativeTagType.MULTIPLY},
             {"divide", OperativeTagType.DIVIDE},
             {"raise", OperativeTagType.RAISE},
+            {"root", OperativeTagType.ROOT},
             {"modulo", OperativeTagType.MODULO},
             {"compare", OperativeTagType.EQUALS},
             {"negate", OperativeTagType.NEGATE}

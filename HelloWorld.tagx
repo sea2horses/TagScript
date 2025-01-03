@@ -1,37 +1,51 @@
-# While
-<variable name="num" type="number"/>
+<var name="MyNum" type="number">
+    [2]
+</var>
 
-<output>
-    "### Number raiser ###"
-    <br/>
+<output no-autobreak>
+    "Original number: "
+    <get name="MyNum"/><br/>
+    "Number subtracted: "
+    <subtract>
+        <get name="MyNum"/> [5]
+    </subtract><br/>
+    "Number duplicated: "
+    <multiply>
+        <get name="MyNum"/> [2]
+    </multiply><br/>
+    "Number halved: "
+    <divide>
+        <get name="MyNum"/> [2]
+    </divide><br/>
+    "Number squared: "
+    <raise>
+        <get name="MyNum"/> [2]
+    </raise><br/>
+    "Number root: "
+    <root>
+        <get name="MyNum"/> [2]
+    </root><br/>
+    "Number negated: "
+    <negate>
+        <get name="MyNum"/>
+    </negate><br/>
 </output>
 
-<input prompt="Type a number: " catch="num"/>
 
-<while>
+<output no-autobreak>"Is the number even? "</output>
+<if>
     <condition>
-        <negate>
-            <compare>
-                <get name="num"/>
-                [100]
-            </compare>
-        </negate>
+        <compare>
+            <modulo><get name="MyNum"/> [2]</modulo>
+            [0]
+        </compare>
     </condition>
-
-    <eval catch="num">
-        <add>
-            <get name="num"/>
-            [1]
-        </add>
-    </eval>
-
-    <output>
-        "Raising the number to 100, current progress: "
-        <get name="num"/>
-    </output>
-</while>
-
-<output>
-    "The number left at: "
-    <get name="num"/>
-</output>
+    <out>
+        "Yes!"
+    </out>
+</if>
+<else>
+    <out>
+        "No!"
+    </out>
+</else>

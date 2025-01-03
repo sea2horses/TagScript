@@ -216,6 +216,66 @@ namespace TagScript.models {
                         (a,b) => new DTString( ((DTString)a).Value + ((DTString)b).Value )}
                 });
             
+            private static BinaryOperations allowedSubtractions = new(
+                new() {
+                    // Subtraction of two numbers
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value - ((DTNumber)b).Value )},
+                    // Subtraction of a number and a boolean
+                    {(DataType.NUMBER, DataType.BOOLEAN),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value - (((DTBoolean)b).Value ? 1 : 0) )},
+                    // Subtraction of two booleans
+                    {(DataType.BOOLEAN, DataType.BOOLEAN),
+                        (a,b) => new DTNumber( (((DTBoolean)a).Value ? 1 : 0) - (((DTBoolean)b).Value ? 1 : 0) )},
+                }
+            );
+
+            private static BinaryOperations allowedMultiplications = new(
+                new() {
+                    // Multiplication of two numbers
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value * ((DTNumber)b).Value )},
+                    // Multiplication of a number and a boolean
+                    {(DataType.NUMBER, DataType.BOOLEAN),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value * (((DTBoolean)b).Value ? 1 : 0) )},
+                    // Multiplication of two booleans
+                    {(DataType.BOOLEAN, DataType.BOOLEAN),
+                        (a,b) => new DTNumber( (((DTBoolean)a).Value ? 1 : 0) * (((DTBoolean)b).Value ? 1 : 0) )},
+                }
+            );
+
+            private static BinaryOperations allowedDivisions = new(
+                new() {
+                    // Division of two numbers
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value / ((DTNumber)b).Value )},
+                }
+            );
+
+            private static BinaryOperations allowedPowers = new(
+                new() {
+                    // Raise a number to another number
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( Math.Pow(((DTNumber)a).Value, ((DTNumber)b).Value) )}
+                }
+            );
+
+            private static BinaryOperations allowedRoots = new(
+                new() {
+                    // Raise a number to another number
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( Math.Pow(((DTNumber)a).Value, 1 / ((DTNumber)b).Value) )}
+                }
+            );
+
+            private static BinaryOperations allowedModulos = new(
+                new() {
+                    // Raise a number to another number
+                    {(DataType.NUMBER, DataType.NUMBER),
+                        (a,b) => new DTNumber( ((DTNumber)a).Value % ((DTNumber)b).Value)}
+                }
+            );
+            
             // Allowed equalities dictionary
             private static BinaryOperations allowedEqualities = new(
                 new() {
@@ -233,9 +293,17 @@ namespace TagScript.models {
                         (a,b) => new DTBoolean( ((DTString)a).Value == ((DTString)b).Value )}
                 });
             
+
+            
             // Dictionary of the binary operations
             private static Dictionary<string, BinaryOperations> binaryOperations = new() {
                 {"add", allowedAdditions},
+                {"subtract",allowedSubtractions},
+                {"multiply",allowedMultiplications},
+                {"divide",allowedDivisions},
+                {"modulo",allowedModulos},
+                {"power",allowedPowers},
+                {"root",allowedRoots},
                 {"equals", allowedEqualities}
             };
 
@@ -278,6 +346,66 @@ namespace TagScript.models {
                 // If result is null, throw an exception
                 if(result is null)
                     throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be added");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Subtract(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"subtract");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be subtracted");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Multiply(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"multiply");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be multiplied");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Divide(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"divide");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be divided");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Power(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"power");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be raised");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Root(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"root");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} have it's root taken");
+                // Else, return the result
+                return result;
+            }
+
+            public static DTGeneric Modulo(DTGeneric L, DTGeneric R) {
+                // Perform add binary operation
+                DTGeneric? result = PerformBinaryOperation(L,R,"modulo");
+                // If result is null, throw an exception
+                if(result is null)
+                    throw new Exception($"Values of type {L.Type()} and {R.Type()} cannot be modulated");
                 // Else, return the result
                 return result;
             }
