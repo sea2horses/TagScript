@@ -1,10 +1,19 @@
-<variable type="string" name="concat-test"/>
-<eval save-to="concat-test">
+# Declare the variable
+<variable type="number" name="x"/>
+
+# User inputs a number
+<input prompt="Type a number:" catch="x"/>
+
+# Evaluate the negative and catch it again
+<eval catch="x">
     <add>
-        "Hello everyone! "
-        "How are you?"
+        <get name="x"/>
+        [1]
     </add>
 </eval>
-<output>
-    <get name="concat-test"/>
+
+# output the result
+<output no-autobreak>
+    "Your number +1 is: "
+    <get name="x"/>
 </output>

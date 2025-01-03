@@ -4,6 +4,7 @@ namespace TagScript.models {
     public enum TokenType {
         IDENTIFIER,
         STRING_LITERAL,
+        NUMBER_LITERAL,
         OPENING_ANGLE_BRACKET,
         CLOSING_ANGLE_BRACKET,
         FORWARD_SLASH,
@@ -86,6 +87,30 @@ namespace TagScript.models {
             return stringLiteral;
         }
 
+        string ReadNumber() {
+            // This function assumes the current position is at a [
+
+            // We start with an empty number literal
+            string numberLiteral = "";
+            // Skip the [ character
+            Pass();
+            // Refresh
+            char ch = SourceCode[Position];
+            // While the character isn't another "
+            while(!ch.Equals(']') && Position < SourceCode.Length) {
+                numberLiteral += ch;
+                Pass();
+                ch = SourceCode[Position];
+            }
+
+            // If the last character wasn't a ", the string wasn't terminated
+            if(ch != ']') {
+                throw new Exception("Number wasn't terminated");
+            }
+
+            return numberLiteral;
+        }
+
         string ReadIdentifier() {
             // We start with an empty identifier name
             string identifierName = "";
@@ -114,7 +139,6 @@ namespace TagScript.models {
 
             for(Position = 0; Position < SourceCode.Length; Pass()) {
                 char ch = SourceCode[Position];
-                Console.WriteLine($"Cycle #{Position}");
 
                 if(ch.Equals('#')) {
                     Console.WriteLine("Starting commented out");
@@ -143,6 +167,11 @@ namespace TagScript.models {
                     string stringLiteral = ReadString();
                     // Push the token
                     PushToken(TokenType.STRING_LITERAL, stringLiteral);
+                } else if(ch.Equals('[')) {
+                    // Read the number
+                    string numberLiteral = ReadNumber();
+                    // Push the token
+                    PushToken(TokenType.NUMBER_LITERAL, numberLiteral);
                 } else if(IsIdentifierFriendly(ch)) {
                     // Read the identifier name
                     string identifierName = ReadIdentifier();

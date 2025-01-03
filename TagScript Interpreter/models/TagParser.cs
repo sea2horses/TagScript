@@ -132,12 +132,23 @@ namespace TagScript.models {
 
                         case (TokenType.STRING_LITERAL): {
                             // Create tag from string literal
-                            Tag newTag = new("lit-text", new(){ {"body", currentToken.Value } }, []);
+                            Tag newTag = new("text-lit", new(){ {"body", currentToken.Value } }, []);
                             // Add it to the body
                             body.Add(newTag);
                             // Eat it, yummy :3
                             EatToken(TokenType.STRING_LITERAL);
                             // Break!
+                            break;
+                        }
+
+                        case (TokenType.NUMBER_LITERAL): {
+                            // Create tag from number literal
+                            Tag newTag = new("number-lit", new(){ {"value", currentToken.Value } }, []);
+                            // Add it to the body
+                            body.Add(newTag);
+                            // Eat it :333
+                            EatToken(TokenType.NUMBER_LITERAL);
+                            // Break it
                             break;
                         }
 

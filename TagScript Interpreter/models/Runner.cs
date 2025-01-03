@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace TagScript.models {
 
     class Variable {
-        private DataTypes.BaseDataType _valueHolder;
+        private DataTypes.DTGeneric _valueHolder;
         public object Value { get => _valueHolder.Get(); }
         public bool Set { get; private set; }
         public DataType Type { get => _valueHolder.Type(); }
@@ -55,15 +55,15 @@ namespace TagScript.models {
         }
 
         [MemberNotNull(nameof(_valueHolder))]
-        void SetValueHolder(DataTypes.BaseDataType value, DataType type) {
+        void SetValueHolder(DataTypes.DTGeneric value, DataType type) {
             // Assert that the value is the same type
-            DataTypes.BaseDataType newVal = value.Assert(type);
+            DataTypes.DTGeneric newVal = value.Assert(type);
             // Override the value holder
             _valueHolder = newVal.Clone();
         }
 
 
-        public DataTypes.BaseDataType GetAsExpression() {
+        public DataTypes.DTGeneric GetAsExpression() {
             if(!Set)
                 throw new Exception($"Trying to access variable {Name} while it is unset");
             return _valueHolder.Clone();
@@ -76,7 +76,7 @@ namespace TagScript.models {
             Set = true;
         }
 
-        public void SetValue(DataTypes.BaseDataType value) {
+        public void SetValue(DataTypes.DTGeneric value) {
             // Set the value with fixed type
             SetValueHolder(value, Type);
             // Set is now true
@@ -163,6 +163,17 @@ namespace TagScript.models {
 
                             break;
                         }
+                        // If it's a number literal, print it to the console
+                        case(TagType.LITERAL_NUMBER): {
+                            // Get the value
+                            double value = RunLiteralNumberTag(tag);
+                            // Print it
+                            Console.Write(value:0.00);
+                            // If autobreak is on, add a line break
+                            if(autobreak) Console.WriteLine();
+
+                            break;
+                        }
                         // If it's a break tag, add a line break
                         case(TagType.BREAK): {
                             int amount = 1;
@@ -179,7 +190,7 @@ namespace TagScript.models {
                         }
                         // If it's a get tag, let's get the var
                         case(TagType.GET): {
-                            DataTypes.BaseDataType getData = RunGetTag(tag, scope);
+                            DataTypes.DTGeneric getData = RunGetTag(tag, scope);
                             // Print it with no arguments
                             Console.WriteLine(getData.Format([]));
                             // If autobreak is on add a line brea
@@ -219,7 +230,7 @@ namespace TagScript.models {
                 scope.Add(newVar);
             }
 
-            public DataTypes.BaseDataType RunGetTag(Tag getTag, List<Variable> scope) {
+            public DataTypes.DTGeneric RunGetTag(Tag getTag, List<Variable> scope) {
                 // Get the necessary attribute
                 string lookupName = getTag.GetAttribute("name");
                 // Look up the variable
@@ -228,7 +239,7 @@ namespace TagScript.models {
                 if(returnVariable is null)
                     throw new Exception($"No variable named {lookupName} in the current scope");
                 // Else, let's get it
-                DataTypes.BaseDataType resultingExpression = returnVariable.GetAsExpression();
+                DataTypes.DTGeneric resultingExpression = returnVariable.GetAsExpression();
                 // Return the thing
                 return resultingExpression;
             }
@@ -240,9 +251,19 @@ namespace TagScript.models {
                 return result;
             }
 
-            public void RunInputTag(Tag inputTag, List<Variable> scope) {
+            public double RunLiteralNumberTag(Tag litNumberTag) {
                 // Get the necessary attribute
-                string saveTo = inputTag.GetAttribute("save-to");
+                string value = litNumberTag.GetAttribute("value");
+                // Parse it
+                if(!double.TryParse(value, out double result))
+                    throw new Exception("Number literal tag content couldn't be converted");
+                // Return the result
+                return result;
+            }
+
+            public DataTypes.DTGeneric RunInputTag(Tag inputTag, List<Variable> scope) {
+                // Get the necessary attribute
+                string saveTo = inputTag.GetAttribute("catch");
                 // Get optional attributes
                 string? prompt = inputTag.GetOptionalAttribute("prompt");
                 bool autobreak = !inputTag.AttributeExists("no-autobreak");
@@ -258,20 +279,17 @@ namespace TagScript.models {
                 string userInput = Console.ReadLine() ?? "";
                 // Save this into the variable
                 variable.SetValue(userInput);
+                // Return it too
+                return variable.GetAsExpression();
             }
 
-            public DataTypes.BaseDataType RunAddTag(Tag addTag, List<Variable> scope) {
-                // Get the amount of tag in its body
-                int operandAmount = addTag.Body.Count;
-                // There must be only two operands 
-                if(operandAmount != 2)
-                    throw new Exception("An add tag must have exactly 2 operands");
+            public DataTypes.DTGeneric[] CatchOperands(Tag operativeTag, List<Variable> scope) {
                 // Else, let's go
-                DataTypes.BaseDataType[] operands = new DataTypes.BaseDataType[2];
+                DataTypes.DTGeneric[] operands = new DataTypes.DTGeneric[operativeTag.Body.Count];
                 // Check each one
                 int i = 0;
                 // Cycle through each tag
-                foreach(Tag tag in addTag.Body) {
+                foreach(Tag tag in operativeTag.Body) {
                     // Depending on the type of tag
                     switch(tag.Type) {
                         // In case it's a get tag
@@ -282,6 +300,16 @@ namespace TagScript.models {
                         // If it's a literal text tag
                         case(TagType.LITERAL_TEXT): {
                             operands[i] = new DataTypes.DTString(RunLiteralTextTag(tag));
+                            break;
+                        }
+                        // If it's a literal number tag
+                        case(TagType.LITERAL_NUMBER): {
+                            operands[i] = new DataTypes.DTNumber(RunLiteralNumberTag(tag));
+                            break;
+                        }
+                        // If it's an input tag
+                        case(TagType.INPUT): {
+                            operands[i] = RunInputTag(tag, scope);
                             break;
                         }
                         // If it's another add tag
@@ -296,13 +324,53 @@ namespace TagScript.models {
                     }
                     i++;
                 }
+                // Return
+                return operands;
+            }
+
+            public DataTypes.DTGeneric RunAddTag(Tag addTag, List<Variable> scope) {
+                // Get the amount of tag in its body
+                int operandAmount = addTag.Body.Count;
+                // There must be only two operands 
+                if(operandAmount != 2)
+                    throw new Exception("An add tag must have exactly 2 operands");
+                // Else, let's go
+                DataTypes.DTGeneric[] operands = CatchOperands(addTag, scope);
                 // Now let's add!
-                DataTypes.BaseDataType result = DataTypes.Add(operands[0], operands[1]);
+                DataTypes.DTGeneric result = DataTypes.TypeOperations.Add(operands[0], operands[1]);
                 // Return the result
                 return result;
             }
 
-            public DataTypes.BaseDataType RunOperativeTag(Tag operativeTag, List<Variable> scope) {
+            public DataTypes.DTGeneric RunCompareTag(Tag equalsTag, List<Variable> scope) {
+                // Get the amount of tag in its body
+                int operandAmount = equalsTag.Body.Count;
+                // There must be only two operands 
+                if(operandAmount != 2)
+                    throw new Exception("A compare tag must have exactly 2 operands");
+                // Else, let's go
+                DataTypes.DTGeneric[] operands = CatchOperands(equalsTag, scope);
+                // Now let's add!
+                DataTypes.DTGeneric result = DataTypes.TypeOperations.Equals(operands[0], operands[1]);
+                // Return the result
+                return result;
+            }
+
+            public DataTypes.DTGeneric RunNegateTag(Tag negateTag, List<Variable> scope) {
+                // Get the amount of tags in its body
+                int operandAmount = negateTag.Body.Count;
+                // There must be only one operand
+                if(operandAmount != 1)
+                    throw new Exception("A negate tag must have exactly 1 operand");
+                // Else, let's go
+                DataTypes.DTGeneric[] operands = CatchOperands(negateTag, scope);
+                // Now let's negate
+                DataTypes.DTGeneric result = DataTypes.TypeOperations.Negate(operands[0]);
+                // Return the result
+                return result;
+            }
+
+            public DataTypes.DTGeneric RunOperativeTag(Tag operativeTag, List<Variable> scope) {
 
                 if(operativeTag.Type != TagType.OPERATIVE)
                     throw new Exception("Evaluation tag only supports operative tags");
@@ -312,12 +380,22 @@ namespace TagScript.models {
                 if(operativeType is null)
                     throw new Exception($"Tag {operativeTag} is not bound to an operative type, therefore it is not supported for operating");
                 // Result variable
-                DataTypes.BaseDataType result;
+                DataTypes.DTGeneric result;
                 // Else, let's do a switch
                 switch(operativeType) {
                     // In case it's a sum tag
                     case (OperativeTagType.SUM): {
                         result = RunAddTag(operativeTag, scope);
+                        break;
+                    }
+                    // In case it's an equals
+                    case (OperativeTagType.EQUALS): {
+                        result = RunCompareTag(operativeTag, scope);
+                        break;
+                    }
+                    // If it's a negates
+                    case (OperativeTagType.NEGATE): {
+                        result = RunNegateTag(operativeTag, scope);
                         break;
                     }
                     // Else, except
@@ -331,7 +409,7 @@ namespace TagScript.models {
 
             public void RunEvalTag(Tag evalTag, List<Variable> scope) {
                 // Get the save location
-                string saveTo = evalTag.GetAttribute("save-to");
+                string saveTo = evalTag.GetAttribute("catch");
                 // Now let's look for the variable
                 Variable? variable = LookUp(saveTo, scope);
                 // If it doesn't exist, except
@@ -341,7 +419,7 @@ namespace TagScript.models {
                 if(evalTag.Body.Count != 1)
                     throw new Exception($"Eval tags must have precisely 1 tag inside them");
                 // Compute the result
-                DataTypes.BaseDataType result = RunOperativeTag(evalTag.Body[0], scope);
+                DataTypes.DTGeneric result = RunOperativeTag(evalTag.Body[0], scope);
                 // Return it
                 variable.SetValue(result);
             }

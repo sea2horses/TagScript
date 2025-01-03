@@ -8,6 +8,7 @@ namespace TagScript.models {
         INPUT,
         OUTPUT,
         LITERAL_TEXT,
+        LITERAL_NUMBER,
         VARIABLE,
         CONSTANT,
         GET,
@@ -23,20 +24,25 @@ namespace TagScript.models {
         DIVIDE,
         RAISE,
         ROOT,
-        MODULO
+        MODULO,
+        EQUALS,
+        NEGATE
     }
 
     public class Tag {
 
         static Dictionary<string, TagType> tagBindings = new(){
-            {"lit-text", TagType.LITERAL_TEXT},
+            {"text-lit", TagType.LITERAL_TEXT},
+            {"number-lit", TagType.LITERAL_NUMBER},
             {"output", TagType.OUTPUT},
             {"br", TagType.BREAK},
             {"variable", TagType.VARIABLE},
             {"get", TagType.GET},
             {"input", TagType.INPUT},
             {"eval", TagType.EVALUATE},
-            {"add", TagType.OPERATIVE}
+            {"add", TagType.OPERATIVE},
+            {"compare", TagType.OPERATIVE},
+            {"negate", TagType.OPERATIVE}
         };
 
         static Dictionary<string, OperativeTagType> operativeBindings = new(){
@@ -45,7 +51,9 @@ namespace TagScript.models {
             {"multiply", OperativeTagType.MULTIPLY},
             {"divide", OperativeTagType.DIVIDE},
             {"raise", OperativeTagType.RAISE},
-            {"modulo", OperativeTagType.MODULO}
+            {"modulo", OperativeTagType.MODULO},
+            {"compare", OperativeTagType.EQUALS},
+            {"negate", OperativeTagType.NEGATE}
         };
 
         public string TagName { get; }
