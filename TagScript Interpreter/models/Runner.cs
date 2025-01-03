@@ -9,19 +9,13 @@ namespace TagScript.models {
     class Variable {
         private DataTypes.DTGeneric _valueHolder;
         public object Value { get => _valueHolder.Get(); }
-        public bool Set { get; private set; }
+        public bool Set { get; private set; } = false;
         public DataType Type { get => _valueHolder.Type(); }
         public string Name { get; private set; }
 
-        public Variable(string name, DataType type, string? value) {
+        public Variable(string name, DataType type) {
             Name = name;
-            SetValueHolder(value, type);
-            Set = true;
-        }
-
-        public Variable(string name, DataType type)
-            : this(name, type, null) {
-                Set = false;
+            SetValueHolder( (string?) null, type );
         }
 
         [MemberNotNull(nameof(_valueHolder))]
@@ -30,21 +24,17 @@ namespace TagScript.models {
             switch(type) {
                 // In case it's a string
                 case(DataType.STRING): {
-                    _valueHolder = new DataTypes.DTString(value ?? "");
+                    _valueHolder = DataTypes.DTString.Parse(value ?? "");
                     break;
                 }
                 // In case it's a number
                 case(DataType.NUMBER): {
-                    if(!double.TryParse(value ?? default(double).ToString(), out double parsedValue))
-                        throw new Exception($"variable {Name} cannot parse '{value}' to type {Type}");
-                    _valueHolder = new DataTypes.DTNumber(parsedValue);
+                    _valueHolder = DataTypes.DTNumber.Parse(value ?? default(double).ToString() );
                     break;
                 }
                 // In case it's a boolean
                 case(DataType.BOOLEAN): {
-                    if(!bool.TryParse(value ?? default(bool).ToString(), out bool parsedValue))
-                        throw new Exception($"variable {Name} cannot parse '{value}' to type {Type}");
-                    _valueHolder = new DataTypes.DTBoolean(parsedValue);
+                    _valueHolder = DataTypes.DTBoolean.Parse(value ?? default(bool).ToString() );
                     break;
                 }
                 // In case it's another value
@@ -63,7 +53,7 @@ namespace TagScript.models {
         }
 
 
-        public DataTypes.DTGeneric GetAsExpression() {
+        public DataTypes.DTGeneric GetAsDataType() {
             if(!Set)
                 throw new Exception($"Trying to access variable {Name} while it is unset");
             return _valueHolder.Clone();
@@ -235,22 +225,21 @@ namespace TagScript.models {
             public void RunVariableTag(Tag varTag, List<Variable> scope) {
                 // Required attributes
                 string name = varTag.GetAttribute("name"), type = varTag.GetAttribute("type");
-                // Non-required attributes
-                string? value = varTag.GetOptionalAttribute("value");
+                // VALUE ATTRIBUTE HAS OFFICIALLY BEEN DEPRECATED
 
                 // Is it a valid type?
                 if(!DataTypes.dataTypeBindings.TryGetValue(type, out DataType parsedDataType))
-                    throw new Exception($"{type} is not a valid datatype");
-                
-                // Is the name not occupied?
+                    throw new Exception($"{type} is not a valid datatype"); 
+                // Is the name occupied?
                 if(scope.Any(v => v.Name == name))
                     throw new Exception($"A variable with name '{name}' already exists in the current scope");
-
                 // Create the new variable 
                 Variable newVar = new(name, parsedDataType);
                 // If there's a value, assign it
                 // (The .setValue function takes care of everything)
-                if(value is not null) newVar.SetValue(value);
+                if(varTag.Body.Count != 0) {
+                    newVar.SetValue( RunAutoevaluativeTag(varTag, scope) );
+                }
 
                 // Add the variable to the scope
                 scope.Add(newVar);
@@ -265,7 +254,7 @@ namespace TagScript.models {
                 if(returnVariable is null)
                     throw new Exception($"No variable named {lookupName} in the current scope");
                 // Else, let's get it
-                DataTypes.DTGeneric resultingExpression = returnVariable.GetAsExpression();
+                DataTypes.DTGeneric resultingExpression = returnVariable.GetAsDataType();
                 // Return the thing
                 return resultingExpression;
             }
@@ -289,24 +278,38 @@ namespace TagScript.models {
 
             public DataTypes.DTGeneric RunInputTag(Tag inputTag, List<Variable> scope) {
                 // Get the necessary attribute
-                string saveTo = inputTag.GetAttribute("catch");
+                string? saveTo = inputTag.GetOptionalAttribute("catch");
+                string? targetType = inputTag.GetOptionalAttribute("target-type");
                 // Get optional attributes
                 string? prompt = inputTag.GetOptionalAttribute("prompt");
                 bool autobreak = !inputTag.AttributeExists("no-autobreak");
-                // Let's get the variable
-                Variable? variable = LookUp(saveTo, scope);
-                // Throw exception if we don't find it
-                if(variable is null)
-                    throw new Exception($"No variable named {variable} in the current scope");
+
+
                 // Now let's do some shit
                 Console.Write(prompt ?? "");
                 if(autobreak && prompt is not null) Console.WriteLine();
                 // Get the user input
                 string userInput = Console.ReadLine() ?? "";
-                // Save this into the variable
-                variable.SetValue(userInput);
-                // Return it too
-                return variable.GetAsExpression();
+
+                if(saveTo is not null) {
+                    // Let's get the variable
+                    Variable? variable = LookUp(saveTo, scope);
+                    // Throw exception if we don't find it
+                    if(variable is null)
+                        throw new Exception($"No variable named {variable} in the current scope");
+                    // Save this into the variable
+                    variable.SetValue(userInput);
+                    // Return it too
+                    return variable.GetAsDataType();
+                } else if(targetType is not null) {
+                    // Let's get the target type
+                    if(!DataTypes.dataTypeBindings.TryGetValue(targetType, out DataType parsedDataType))
+                        throw new Exception($"{targetType} is not a valid datatype");
+                    // Generic Parse
+                    DataTypes.DTGeneric newExpr = DataTypes.DTGeneric.GenericParse(userInput, parsedDataType);
+                    // Return it
+                    return newExpr;
+                } else throw new Exception("Input tag requires either a 'catch' or a 'target-type' attribute");
             }
 
             public DataTypes.DTGeneric[] CatchOperands(Tag operativeTag, List<Variable> scope) {
@@ -455,38 +458,60 @@ namespace TagScript.models {
                 return result;
             }
 
-            public bool RunConditionalTag(Tag conditionTag, Tag bodyTag, List<Variable> scope) {
-                // Store the boolean
-                DataTypes.DTBoolean condition_result;
-                // Get the condition tag body count (must be 1)
-                if(conditionTag.Body.Count != 1)
-                    throw new Exception("A condition tag must have precisely 1 tag inside it");
-                // Else, let's switch
-                Tag conditionalOperand = conditionTag.Body[0];
-                // Boom
-                switch(conditionalOperand.Type) {
-                    case(TagType.EVALUATE): {
-                        DataTypes.DTGeneric result = RunEvalTag(conditionalOperand, scope);
-                        if(result.Type() != DataType.BOOLEAN)
-                            throw new Exception("The body of a conditional tag must resolve to a boolean");
-                        condition_result = (DataTypes.DTBoolean)result;
+            public DataTypes.DTGeneric RunAutoevaluativeTag(Tag autoEvalTag, List<Variable> scope) {
+                // Declare the expression result
+                DataTypes.DTGeneric resultingExpression;
+                // An autoevaluative tag must have only ONE master tag
+                if(autoEvalTag.Body.Count != 1)
+                    throw new Exception("An auto-evaluative tag must only have 1 tag inside it");
+                // Depending on the tag found
+                Tag masterTag = autoEvalTag.Body[0];
+                // Let's do a switch on the type
+                switch(masterTag.Type) {
+                    // In case it's a number literal
+                    case(TagType.LITERAL_NUMBER): {
+                        resultingExpression = new DataTypes.DTNumber(RunLiteralNumberTag(masterTag));
                         break;
                     }
-
+                    // In case it's a string literal
+                    case(TagType.LITERAL_TEXT): {
+                        resultingExpression = new DataTypes.DTString(RunLiteralTextTag(masterTag));
+                        break;
+                    }
+                    // In case it's a get, run it
                     case(TagType.GET): {
-                        DataTypes.DTGeneric result = RunGetTag(conditionalOperand, scope);
-                        if(result.Type() != DataType.BOOLEAN)
-                            throw new Exception("The variable on a conditional test must be a boolean");
-                        condition_result = (DataTypes.DTBoolean)result;
+                        resultingExpression = RunGetTag(masterTag, scope);
                         break;
                     }
-
+                    // In case it's an operative tag, also run it
+                    case(TagType.OPERATIVE): {
+                        resultingExpression = RunOperativeTag(masterTag, scope);
+                        break;
+                    }
+                    // If it's anything else, BOOM
                     default: {
-                        throw new Exception($"Tag {conditionalOperand.TagName} is not supported as an operand in a conditional tag");
+                        throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
                     }
                 }
+                // Return the result
+                return resultingExpression;
+            }
+
+            public bool RunConditionalTag(Tag conditionTag, List<Tag> bodyTags, List<Variable> scope) {
+                // Store the boolean
+                DataTypes.DTBoolean condition_result;
+                // Normally you would get the condition tag body count (must be 1)
+                // But auto-evaluative tags already do that check, so let's just get the resulting expression
+                DataTypes.DTGeneric result = RunAutoevaluativeTag(conditionTag, scope);
+                // Check if it's a boolean
+                if(result.Type() != DataType.BOOLEAN)
+                    throw new Exception("The body of a conditional tag must resolve to a boolean");
+                // Now parse it
+                condition_result = (DataTypes.DTBoolean) result;
                 // If the conditional resolved to true, run the body
                 if(condition_result.Value) {
+                    // MasterTag for the interpreter
+                    Tag bodyTag = new Tag("body", bodyTags);
                     // Create a new interpreter instance
                     TagScriptInterpreter interpreter = new(bodyTag, scope);
                     // Run it
@@ -499,37 +524,38 @@ namespace TagScript.models {
             public void RunIfBlock(List<Tag> ifBlock, List<Variable> scope) {
                 // Get conditions and body tags
                 Tag?[] conditions = new Tag[ifBlock.Count];
-                Tag[] bodies = new Tag[ifBlock.Count];
-
+                List<Tag>[] bodies = new List<Tag>[ifBlock.Count];
+                // Body tag is now deprecated
 
                 // Foreach
                 for(int i = 0; i < ifBlock.Count; i++) {
                     Tag block = ifBlock[i];
-                    // If there's more than two tags, fuck you
-                    if(block.Body.Count > 2)
-                        throw new Exception("An if block must have precisely two tags, 'condition' and 'body'");
-                    // Declare the current condition and body
-                    Tag? condition = null;
-                    Tag? body = null;
-                    // Look for them in the block body
+                    bodies[i] = [];
+                    Tag? conditionTag = null;
+                    // Let's look for the condition tag, everything else will be added to the body
                     foreach(Tag tag in block.Body) {
-                        if(tag.Type == TagType.CONDITION) condition = tag;
-                        else if(tag.Type == TagType.BODY) body = tag;
+                        // If we found the condition tag
+                        if(tag.Type == TagType.CONDITION) {
+                            // If we already had a condition tag, error it
+                            if(conditionTag is not null)
+                                throw new Exception("There can't be more than one condition in an if/elif tag");
+                            conditionTag = tag;
+                        } else bodies[i].Add(tag);
                     }
-                    // If any of them are null, fuck you
-                    if(condition is null && block.Type != TagType.ELSE)
-                        throw new Exception("An if block must have a 'condition' tag");
-                    if(body is null)
-                        throw new Exception("An if block must have a 'body' tag");
-                    
-                    conditions[i] = condition;
-                    bodies[i] = body;
+                    // If there's not a condition tag and it's not an else block, kill yourself
+                    if(block.Type != TagType.ELSE && conditionTag is null)
+                        throw new Exception("Every if/elif tag must have a 'condition' tag inside it");
+                    // If it's an else and there's a condition, also error it
+                    if(block.Type == TagType.ELSE && conditionTag is not null)
+                        throw new Exception("An else tag can't have a 'condition' tag inside it");
+                    // Push it to the array
+                    conditions[i] = conditionTag;
                 }
 
                 // Now run through each one
                 for(int i = 0; i < ifBlock.Count; i++) {
                     Tag? conditionTag = conditions[i];
-                    Tag body = bodies[i];
+                    List<Tag> body = bodies[i];
                     // If any of them return true, the cycle is broken and any left stop executing
                     if(ifBlock[i].Type != TagType.ELSE) {
                         if(conditionTag is null) {
@@ -538,8 +564,10 @@ namespace TagScript.models {
                         if(RunConditionalTag(conditionTag, body, scope)) break;
                     } else {
                         // We've reached the 'else'
+                        // Create a master tag for the interpreter
+                        Tag bodyTag = new Tag("body", body);
                         // Create a new interpreter instance
-                        TagScriptInterpreter interpreter = new(body, scope);
+                        TagScriptInterpreter interpreter = new(bodyTag, scope);
                         // Run it
                         interpreter.Run();
                     }

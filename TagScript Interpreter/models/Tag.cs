@@ -20,7 +20,7 @@ namespace TagScript.models {
         ELSEIF,
         WHILE,
         CONDITION,
-        BODY
+        
     }
 
     public enum OperativeTagType {
@@ -50,7 +50,6 @@ namespace TagScript.models {
             {"else", TagType.ELSE},
             {"while", TagType.WHILE},
             {"condition", TagType.CONDITION},
-            {"body", TagType.BODY},
             {"eval", TagType.EVALUATE},
             {"add", TagType.OPERATIVE},
             {"compare", TagType.OPERATIVE},

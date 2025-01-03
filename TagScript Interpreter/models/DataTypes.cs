@@ -25,7 +25,15 @@ namespace TagScript.models {
             public abstract string Format(string[] args);
             // Clone function
             public abstract DTGeneric Clone();
-            // Assert gneeric function
+            public static DTGeneric GenericParse(string textToParse, DataType type) {
+                switch(type) {
+                    case(DataType.NUMBER): return DTNumber.Parse(textToParse);
+                    case(DataType.STRING): return DTString.Parse(textToParse);
+                    case(DataType.BOOLEAN): return DTBoolean.Parse(textToParse);
+                    default: throw new Exception($"{type} does not have a generic parsing method");
+                }
+            }
+            // Assert generic function
             public DTGeneric Assert(DataType type) {
                 if(type != Type())
                     throw new Exception($"Was expecting {Type()} but got {type}");
@@ -44,6 +52,22 @@ namespace TagScript.models {
             public override DataType Type() => DataType.NUMBER;
             public override object Get() => Value;
             public override DTGeneric Clone() => new DTNumber(Value);
+            public static DTNumber Parse(string textToParse)
+            {
+                if(!double.TryParse(textToParse, out double parsedValue))
+                    throw new Exception($"String {textToParse} cannot be parsed to DataType {DataType.NUMBER}");
+                else return new DTNumber(parsedValue);
+            }
+            public static bool TryParse(string textToParse, out DTNumber? numberHolder)
+            {
+                numberHolder = null;
+                try {
+                    numberHolder = DTNumber.Parse(textToParse);
+                    return true;
+                } catch (Exception) {
+                    return false;
+                }
+            }
         }
 
         public class DTString : DTGeneric {
@@ -57,6 +81,21 @@ namespace TagScript.models {
             public override DataType Type() { return DataType.STRING; }
             public override object Get() => Value;
             public override DTGeneric Clone() => new DTString(Value);
+
+            public static DTString Parse(string textToParse)
+            {
+                return new DTString(textToParse);
+            }
+            public static bool TryParse(string textToParse, out DTString? stringHolder)
+            {
+                stringHolder = null;
+                try {
+                    stringHolder = DTString.Parse(textToParse);
+                    return true;
+                } catch (Exception) {
+                    return false;
+                }
+            }
         }
 
         public class DTBoolean : DTGeneric {
@@ -70,6 +109,22 @@ namespace TagScript.models {
             public override DataType Type() { return DataType.BOOLEAN; }
             public override object Get() => Value;
             public override DTGeneric Clone() => new DTBoolean(Value);
+            public static DTBoolean Parse(string textToParse)
+            {
+                if(!bool.TryParse(textToParse, out bool parsedValue))
+                    throw new Exception($"String {textToParse} cannot be parsed to DataType {DataType.BOOLEAN}");
+                else return new DTBoolean(parsedValue);
+            }
+            public static bool TryParse(string textToParse, out DTBoolean? booleanHolder)
+            {
+                booleanHolder = null;
+                try {
+                    booleanHolder = DTBoolean.Parse(textToParse);
+                    return true;
+                } catch (Exception) {
+                    return false;
+                }
+            }
         }
 
         public class DTArray : DTGeneric {

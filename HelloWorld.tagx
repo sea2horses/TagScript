@@ -1,44 +1,17 @@
-# Declare the variable
-<variable type="number" name="x"/>
-
-# User inputs a number
-<input prompt="Type a number:" catch="x"/>
-
 # Evaluate the number
 <if>
     <condition>
-        <eval>
-            <compare>
-                <get name="x"/>
-                [5]
-            </compare>
-        </eval>
+        <compare>
+            <input prompt="Type a number:" target-type="number"/>
+            [5] 
+        </compare>
     </condition>
-    <body>
-        <output>
-            "Your number is 5!"
-        </output>
-    </body>
+    <output>
+        "Your number is 5!"
+    </output>
 </if>
-<elif>
-    <condition>
-        <eval>
-            <compare>
-                <get name="x"/>
-                [6]
-            </compare>
-        </eval>
-    </condition>
-    <body>
-        <output>
-            "Your number is 6!"
-        </output>
-    </body>
-</elif>
 <else>
-    <body>
-        <output>
-            "Your number is neither 5 or 6!"
-        </output>
-    </body>
+    <output>
+        "Your number is not 5!"
+    </output>
 </else>
