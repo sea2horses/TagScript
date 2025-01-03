@@ -97,11 +97,17 @@ namespace TagScript.models {
             this.MasterTag = masterTag;
         }
 
+        public TagScriptInterpreter(Tag masterTag, List<Variable> initialVariables)
+            : this(masterTag) {
+                this.variables = initialVariables;
+            }
+
         public void Run() {
             // Create a tagRunner
             TagRunner tagRunner = new();
             // Run each tag in the mastertag body
-            foreach(Tag tag in MasterTag.Body) {
+            for(int i = 0; i < MasterTag.Body.Count; i++) {
+                Tag tag = MasterTag.Body[i];
                 switch(tag.Type) {
                     // If it's an output tag, run it
                     case(TagType.OUTPUT): {
@@ -121,6 +127,26 @@ namespace TagScript.models {
                     // If it's an eval, run it
                     case(TagType.EVALUATE): {
                         tagRunner.RunEvalTag(tag, variables);
+                        break;
+                    }
+                    // If it's an if, get all the adjacent blocks and run them
+                    case(TagType.IF): {
+                        List<Tag> ifBlock = [];
+
+                        ifBlock.Add(tag); // Add the if tag
+
+                        i++;
+                        while(i < MasterTag.Body.Count) {
+                            tag = MasterTag.Body[i];
+                            if(tag.Type == TagType.ELSEIF || tag.Type == TagType.ELSE) {
+                                ifBlock.Add(tag);
+                                i++;
+                                if(tag.Type == TagType.ELSE) break;
+                            } else break;
+                        }
+                        i--;
+
+                        tagRunner.RunIfBlock(ifBlock, variables);
                         break;
                     }
                     // If it's anything else, except
@@ -407,21 +433,117 @@ namespace TagScript.models {
                 return result;
             }
 
-            public void RunEvalTag(Tag evalTag, List<Variable> scope) {
+            public DataTypes.DTGeneric RunEvalTag(Tag evalTag, List<Variable> scope) {
                 // Get the save location
-                string saveTo = evalTag.GetAttribute("catch");
-                // Now let's look for the variable
-                Variable? variable = LookUp(saveTo, scope);
-                // If it doesn't exist, except
-                if(variable is null)
-                    throw new Exception($"No variable named {variable} in the current scope");
+                string? saveTo = evalTag.GetOptionalAttribute("catch");
                 // Check the body has precisely 1 tag
                 if(evalTag.Body.Count != 1)
                     throw new Exception($"Eval tags must have precisely 1 tag inside them");
                 // Compute the result
                 DataTypes.DTGeneric result = RunOperativeTag(evalTag.Body[0], scope);
-                // Return it
-                variable.SetValue(result);
+                // If there's a variable ready for catching
+                if(saveTo is not null) {
+                    // Now let's look for the variable
+                    Variable? variable = LookUp(saveTo, scope);
+                    // If it doesn't exist, except
+                    if(variable is null)
+                        throw new Exception($"No variable named {variable} in the current scope");
+                    // Return it
+                    variable.SetValue(result);
+                }   
+                // Return it to whoever wants it
+                return result;
+            }
+
+            public bool RunConditionalTag(Tag conditionTag, Tag bodyTag, List<Variable> scope) {
+                // Store the boolean
+                DataTypes.DTBoolean condition_result;
+                // Get the condition tag body count (must be 1)
+                if(conditionTag.Body.Count != 1)
+                    throw new Exception("A condition tag must have precisely 1 tag inside it");
+                // Else, let's switch
+                Tag conditionalOperand = conditionTag.Body[0];
+                // Boom
+                switch(conditionalOperand.Type) {
+                    case(TagType.EVALUATE): {
+                        DataTypes.DTGeneric result = RunEvalTag(conditionalOperand, scope);
+                        if(result.Type() != DataType.BOOLEAN)
+                            throw new Exception("The body of a conditional tag must resolve to a boolean");
+                        condition_result = (DataTypes.DTBoolean)result;
+                        break;
+                    }
+
+                    case(TagType.GET): {
+                        DataTypes.DTGeneric result = RunGetTag(conditionalOperand, scope);
+                        if(result.Type() != DataType.BOOLEAN)
+                            throw new Exception("The variable on a conditional test must be a boolean");
+                        condition_result = (DataTypes.DTBoolean)result;
+                        break;
+                    }
+
+                    default: {
+                        throw new Exception($"Tag {conditionalOperand.TagName} is not supported as an operand in a conditional tag");
+                    }
+                }
+                // If the conditional resolved to true, run the body
+                if(condition_result.Value) {
+                    // Create a new interpreter instance
+                    TagScriptInterpreter interpreter = new(bodyTag, scope);
+                    // Run it
+                    interpreter.Run();
+                }
+                // Return the value
+                return condition_result.Value;
+            }
+
+            public void RunIfBlock(List<Tag> ifBlock, List<Variable> scope) {
+                // Get conditions and body tags
+                Tag?[] conditions = new Tag[ifBlock.Count];
+                Tag[] bodies = new Tag[ifBlock.Count];
+
+
+                // Foreach
+                for(int i = 0; i < ifBlock.Count; i++) {
+                    Tag block = ifBlock[i];
+                    // If there's more than two tags, fuck you
+                    if(block.Body.Count > 2)
+                        throw new Exception("An if block must have precisely two tags, 'condition' and 'body'");
+                    // Declare the current condition and body
+                    Tag? condition = null;
+                    Tag? body = null;
+                    // Look for them in the block body
+                    foreach(Tag tag in block.Body) {
+                        if(tag.Type == TagType.CONDITION) condition = tag;
+                        else if(tag.Type == TagType.BODY) body = tag;
+                    }
+                    // If any of them are null, fuck you
+                    if(condition is null && block.Type != TagType.ELSE)
+                        throw new Exception("An if block must have a 'condition' tag");
+                    if(body is null)
+                        throw new Exception("An if block must have a 'body' tag");
+                    
+                    conditions[i] = condition;
+                    bodies[i] = body;
+                }
+
+                // Now run through each one
+                for(int i = 0; i < ifBlock.Count; i++) {
+                    Tag? conditionTag = conditions[i];
+                    Tag body = bodies[i];
+                    // If any of them return true, the cycle is broken and any left stop executing
+                    if(ifBlock[i].Type != TagType.ELSE) {
+                        if(conditionTag is null) {
+                            throw new Exception("if and elseif blocks must have a 'condition' tag");
+                        }
+                        if(RunConditionalTag(conditionTag, body, scope)) break;
+                    } else {
+                        // We've reached the 'else'
+                        // Create a new interpreter instance
+                        TagScriptInterpreter interpreter = new(body, scope);
+                        // Run it
+                        interpreter.Run();
+                    }
+                }
             }
         }
     }

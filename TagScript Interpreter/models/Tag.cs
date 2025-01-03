@@ -14,7 +14,13 @@ namespace TagScript.models {
         GET,
         EVALUATE,
         BREAK,
-        OPERATIVE
+        OPERATIVE,
+        IF,
+        ELSE,
+        ELSEIF,
+        WHILE,
+        CONDITION,
+        BODY
     }
 
     public enum OperativeTagType {
@@ -39,6 +45,12 @@ namespace TagScript.models {
             {"variable", TagType.VARIABLE},
             {"get", TagType.GET},
             {"input", TagType.INPUT},
+            {"if", TagType.IF},
+            {"elif", TagType.ELSEIF},
+            {"else", TagType.ELSE},
+            {"while", TagType.WHILE},
+            {"condition", TagType.CONDITION},
+            {"body", TagType.BODY},
             {"eval", TagType.EVALUATE},
             {"add", TagType.OPERATIVE},
             {"compare", TagType.OPERATIVE},
