@@ -1,17 +1,37 @@
-# Evaluate the number
-<if>
+# While
+<variable name="num" type="number"/>
+
+<output>
+    "### Number raiser ###"
+    <br/>
+</output>
+
+<input prompt="Type a number: " catch="num"/>
+
+<while>
     <condition>
-        <compare>
-            <input prompt="Type a number:" target-type="number"/>
-            [5] 
-        </compare>
+        <negate>
+            <compare>
+                <get name="num"/>
+                [100]
+            </compare>
+        </negate>
     </condition>
+
+    <eval catch="num">
+        <add>
+            <get name="num"/>
+            [1]
+        </add>
+    </eval>
+
     <output>
-        "Your number is 5!"
+        "Raising the number to 100, current progress: "
+        <get name="num"/>
     </output>
-</if>
-<else>
-    <output>
-        "Your number is not 5!"
-    </output>
-</else>
+</while>
+
+<output>
+    "The number left at: "
+    <get name="num"/>
+</output>

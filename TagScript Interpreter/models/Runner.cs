@@ -139,6 +139,11 @@ namespace TagScript.models {
                         tagRunner.RunIfBlock(ifBlock, variables);
                         break;
                     }
+                    // If it's a while tag, run it
+                    case(TagType.WHILE): {
+                        tagRunner.RunWhileBlock(tag, variables);
+                        break;
+                    }
                     // If it's anything else, except
                     default: {
                         throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
@@ -497,7 +502,7 @@ namespace TagScript.models {
                 return resultingExpression;
             }
 
-            public bool RunConditionalTag(Tag conditionTag, List<Tag> bodyTags, List<Variable> scope) {
+            public bool RunConditionalTag(Tag conditionTag, List<Variable> scope) {
                 // Store the boolean
                 DataTypes.DTBoolean condition_result;
                 // Normally you would get the condition tag body count (must be 1)
@@ -508,15 +513,6 @@ namespace TagScript.models {
                     throw new Exception("The body of a conditional tag must resolve to a boolean");
                 // Now parse it
                 condition_result = (DataTypes.DTBoolean) result;
-                // If the conditional resolved to true, run the body
-                if(condition_result.Value) {
-                    // MasterTag for the interpreter
-                    Tag bodyTag = new Tag("body", bodyTags);
-                    // Create a new interpreter instance
-                    TagScriptInterpreter interpreter = new(bodyTag, scope);
-                    // Run it
-                    interpreter.Run();
-                }
                 // Return the value
                 return condition_result.Value;
             }
@@ -561,7 +557,15 @@ namespace TagScript.models {
                         if(conditionTag is null) {
                             throw new Exception("if and elseif blocks must have a 'condition' tag");
                         }
-                        if(RunConditionalTag(conditionTag, body, scope)) break;
+                        if(RunConditionalTag(conditionTag, scope)) {
+                            // New body tag
+                            Tag bodyTag = new Tag("body", body);
+                            // Create a new interpreter instance
+                            TagScriptInterpreter interpreter = new(bodyTag, scope);
+                            // Run it
+                            interpreter.Run();
+                            break;
+                        }
                     } else {
                         // We've reached the 'else'
                         // Create a master tag for the interpreter
@@ -571,6 +575,33 @@ namespace TagScript.models {
                         // Run it
                         interpreter.Run();
                     }
+                }
+            }
+
+            public void RunWhileBlock(Tag whileBlock, List<Variable> scope) {
+                Tag? conditionTag = null;
+                List<Tag> body = [];
+                // Let's go get the condition tag, the rest is considered body
+                foreach(Tag tag in whileBlock.Body) {
+                    // If we found the condition tag
+                    if(tag.Type == TagType.CONDITION) {
+                        // If we already had a condition tag, error it
+                        if(conditionTag is not null)
+                            throw new Exception("There can't be more than one condition in a while tag");
+                        conditionTag = tag;
+                    } else body.Add(tag);
+                }
+                // If there's no conditional tag, error
+                if(conditionTag is null)
+                    throw new Exception("while blocks must have a 'condition' tag");
+                // Create the masterTag
+                Tag bodyTag = new Tag("body", body);
+                // Now, while the conditional tag is true
+                while(RunConditionalTag(conditionTag, scope)) {
+                    // Create the interpreter instance
+                    TagScriptInterpreter interpreter = new(bodyTag, scope);
+                    // Run it
+                    interpreter.Run();
                 }
             }
         }
