@@ -144,6 +144,11 @@ namespace TagScript.models {
                         tagRunner.RunWhileBlock(tag, variables);
                         break;
                     }
+                    // If it's a call tag, run it
+                    case(TagType.CALL): {
+                        tagRunner.RunFunctionCall(tag, variables);
+                        break;
+                    }
                     // If it's anything else, except
                     default: {
                         throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
@@ -222,6 +227,19 @@ namespace TagScript.models {
                         // If it's an operative tag, run it and format the result
                         case(TagType.OPERATIVE): {
                             DataTypes.DTGeneric getData = RunOperativeTag(tag, scope);
+                            // Print it
+                            Console.WriteLine(getData.Format([]));
+                            // If autobreak
+                            if(autobreak) Console.WriteLine();
+
+                            break;
+                        }
+                        // If it's a function call, run it and format the result
+                        case(TagType.CALL): {
+                            DataTypes.DTGeneric? getData = RunFunctionCall(tag, scope);
+                            // If the function didn't return anything
+                            if(getData is null)
+                                throw new Exception($"Function with no return value cannot be printed");
                             // Print it
                             Console.WriteLine(getData.Format([]));
                             // If autobreak
@@ -482,6 +500,17 @@ namespace TagScript.models {
                         resultingExpression = RunOperativeTag(masterTag, scope);
                         break;
                     }
+                    // In case it's a function call, run it
+                    case(TagType.CALL): {
+                        resultingExpression = RunFunctionCall(masterTag, scope) ??
+                            throw new Exception($"Function with no return value cannot be used in an expression");
+                        break;
+                    }
+                    // In case it's input, run it
+                    case(TagType.INPUT): {
+                        resultingExpression = RunInputTag(masterTag, scope);
+                        break;
+                    }
                     // If it's anything else, BOOM
                     default: {
                         throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
@@ -592,6 +621,37 @@ namespace TagScript.models {
                     // Run it
                     interpreter.Run();
                 }
+            }
+
+            public DataTypes.DTGeneric? RunFunctionCall(Tag functionTag, List<Variable> scope) {
+                // Declare the list of passed arguments
+                PassedArgument[] passedArguments = new PassedArgument[functionTag.Body.Count];
+                // Get the name of the function
+                string functionName = functionTag.GetAttribute("name");
+
+                // Get the argument tags
+                for(int i = 0; i < functionTag.Body.Count; i++) {
+                    Tag tag = functionTag.Body[i];
+                    // If the tag isn't an argument tag, error
+                    if(tag.Type != TagType.ARGUMENT)
+                        throw new Exception($"Function call tag only supports argument tags");
+                    // Get the tag 'name' argument
+                    string? argumentName = tag.GetOptionalAttribute("name");
+                    // Get the expression within
+                    DataTypes.DTGeneric result = RunAutoevaluativeTag(tag, scope);
+                    // Create the passed argument
+                    passedArguments[i] = new PassedArgument(result, argumentName);
+                }
+
+                // Check if it's a builtin function
+                BuiltInFunction? builtInFunction = BuiltInFunctions.GetFunction(functionName);
+                // If it's a BuiltInFunction
+                if(builtInFunction is not null) {
+                    DataTypes.DTGeneric? result = builtInFunction.Call(passedArguments);
+                    return result;
+                }
+                // Else, let's throw an error
+                throw new Exception($"Function {functionName} does not exist");
             }
         }
     }

@@ -1,51 +1,30 @@
-<var name="MyNum" type="number">
-    [2]
+# Number rounding program
+<var name="number_container" type="number">
+    [0]
 </var>
 
-<output no-autobreak>
-    "Original number: "
-    <get name="MyNum"/><br/>
-    "Number subtracted: "
-    <subtract>
-        <get name="MyNum"/> [5]
-    </subtract><br/>
-    "Number duplicated: "
-    <multiply>
-        <get name="MyNum"/> [2]
-    </multiply><br/>
-    "Number halved: "
-    <divide>
-        <get name="MyNum"/> [2]
-    </divide><br/>
-    "Number squared: "
-    <raise>
-        <get name="MyNum"/> [2]
-    </raise><br/>
-    "Number root: "
-    <root>
-        <get name="MyNum"/> [2]
-    </root><br/>
-    "Number negated: "
-    <negate>
-        <get name="MyNum"/>
-    </negate><br/>
-</output>
-
-
-<output no-autobreak>"Is the number even? "</output>
-<if>
+<while>
     <condition>
-        <compare>
-            <modulo><get name="MyNum"/> [2]</modulo>
-            [0]
-        </compare>
+        <negate>
+            <compare>
+                <get name="number_container"/>
+                [-9999]
+            </compare>
+        </negate>
     </condition>
-    <out>
-        "Yes!"
-    </out>
-</if>
-<else>
-    <out>
-        "No!"
-    </out>
-</else>
+
+    <eval catch="number_container">
+        <call name="round">
+            <arg>
+                <input no-autobreak target-type="number"
+                    prompt="Type a number to round (-9999 to stop): "/>
+            </arg>
+        </call>
+    </eval>
+
+    <output no-autobreak>
+        "Your number rounded is: "
+        <get name="number_container"/>
+        <br/>
+    </output>
+</while>

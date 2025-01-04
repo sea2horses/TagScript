@@ -20,7 +20,9 @@ namespace TagScript.models {
         ELSEIF,
         WHILE,
         CONDITION,
-        
+        FUNCTION,
+        CALL,
+        ARGUMENT
     }
 
     public enum OperativeTagType {
@@ -58,6 +60,8 @@ namespace TagScript.models {
             {"while", TagType.WHILE},
             {"condition", TagType.CONDITION},
             {"eval", TagType.EVALUATE},
+            {"call", TagType.CALL},
+            {"arg", TagType.ARGUMENT},
             {"add", TagType.OPERATIVE},
             {"subtract",TagType.OPERATIVE},
             {"multiply",TagType.OPERATIVE},
