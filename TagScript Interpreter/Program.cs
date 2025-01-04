@@ -2,7 +2,80 @@
 using System;
 using TagScript.models;
 
+namespace TagScript.main;
+
+static class TagxExceptions {
+    public enum ExceptionType {
+        FATAL,
+        WARNING,
+        INFO
+    }
+
+    public static string? SourceCode = null;
+
+    public static void RaiseException(string infoMessage,
+        ExceptionType exType, (int, int) LineColumn, int cursorLength = 1) {
+            switch(exType) {
+                case(ExceptionType.FATAL): {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    break;
+                }
+                case(ExceptionType.WARNING): {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    break;
+                }
+                case(ExceptionType.INFO): {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    break;
+                }
+            }
+
+            Console.WriteLine($"### {exType} ###: {infoMessage}");
+            Console.WriteLine($"| AT LINE {LineColumn.Item1} : COLUMN {LineColumn.Item2}");
+
+            if(SourceCode is not null) {
+                string[] sourceLines = SourceCode.Split('\n');
+                // Print 2 lines before if they exist
+                for(int i = Math.Max(LineColumn.Item1 - 2, 0); i <= LineColumn.Item1; i++) {
+                    Console.WriteLine($"|{i:0000}| {sourceLines[i - 1]}");
+                }
+                // Print the arrow that points
+                Console.Write("       ");
+                for(int i = 0; i < LineColumn.Item2 - 1; i++) {
+                    char ch = sourceLines[LineColumn.Item1 - 1][i];
+                    Console.Write( (ch == '\t') ? '\t' : ' ');
+                }
+                for(int i = 0; i < cursorLength; i++) Console.Write("^");
+                Console.WriteLine();
+            }
+            Console.ResetColor();
+            if(exType == ExceptionType.FATAL) Environment.Exit(1);
+        }
+}
+
 static class Program {
+
+    static class RunInformation {
+        static private HashSet<string> Flags = [];
+        static private string? File = null;
+        static public string SourceCode = "";
+
+        static public bool FlagExists(string flagName)
+            => Flags.Contains(flagName);    
+    }
+
+    public static class TagxDebug {
+        public static void Log(string message) {
+            if(RunInformation.FlagExists("debug"))
+                Console.Write(message);
+        }
+
+        public static void LogLine(string message) {
+            if(RunInformation.FlagExists("debug"))
+                Console.WriteLine(message);
+        }
+    }
+
     static void Main(string[] args) {
         string sourceCode = "<output>\"Hello World!\"</output>";
         if(args.Length != 0) {
@@ -16,6 +89,7 @@ static class Program {
         }
 
         Console.WriteLine($"Source Code: \n{sourceCode}");
+        TagxExceptions.SourceCode = sourceCode;
 
         Tokenizer tokenizer = new(sourceCode);
         List<Token> tokenList = tokenizer.Parse();

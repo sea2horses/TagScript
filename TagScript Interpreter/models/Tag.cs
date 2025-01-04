@@ -22,7 +22,10 @@ namespace TagScript.models {
         CONDITION,
         FUNCTION,
         CALL,
-        ARGUMENT
+        ARGUMENT,
+        SET,
+        TRY,
+        CATCH
     }
 
     public enum OperativeTagType {
@@ -60,8 +63,11 @@ namespace TagScript.models {
             {"while", TagType.WHILE},
             {"condition", TagType.CONDITION},
             {"eval", TagType.EVALUATE},
+            {"set", TagType.SET},
             {"call", TagType.CALL},
             {"arg", TagType.ARGUMENT},
+            {"try", TagType.TRY},
+            {"catch",TagType.CATCH},
             {"add", TagType.OPERATIVE},
             {"subtract",TagType.OPERATIVE},
             {"multiply",TagType.OPERATIVE},
@@ -91,6 +97,7 @@ namespace TagScript.models {
         public TagType Type { get; private set; } = TagType.UNIVERSAL;
         public Dictionary<string, string> Attributes { get; }
         public List<Tag> Body { get; }
+        public (int, int) Position { get; set; } = (-1, -1);
 
         public Tag(string tagName, Dictionary<string, string> attributes, List<Tag> body) {
             this.TagName = tagName;

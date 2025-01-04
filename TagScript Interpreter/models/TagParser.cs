@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using Microsoft.Win32.SafeHandles;
+using TagScript.main;
 
 namespace TagScript.models {
     public class TagParser(List<Token> tokenList) {
@@ -30,13 +31,18 @@ namespace TagScript.models {
             // If the first token is an opening angle bracket, eat it
             if(currentToken.Type == TokenType.OPENING_ANGLE_BRACKET)
                 EatToken(TokenType.OPENING_ANGLE_BRACKET);
-            
+            // If there's a forward slash, then it's an extra closing tag
+            if(currentToken.Type == TokenType.FORWARD_SLASH)
+                throw new Exception("Extra closing tag");
+
             // We need an identifier, if it isn't, fuck you
             if(currentToken.Type != TokenType.IDENTIFIER)
                 throw new Exception("Was expecting identifier");
             
             // Get the value of the identifier
             string tagName = currentToken.Value;
+            // Get the identifier token in case it's necessary
+            Token idenToken = currentToken;
             // Eat Tokens yay!!!! :33333
             EatToken(TokenType.IDENTIFIER);
 
@@ -47,7 +53,7 @@ namespace TagScript.models {
                 && currentToken.Type != TokenType.FORWARD_SLASH) {
                     // It's gotta be an identifier guys
                     if(currentToken.Type != TokenType.IDENTIFIER)
-                        throw new Exception("Was expecting identifier or a closing tag");
+                        throw new Exception("Was expecting identifier/attribute or a closing tag '>'");
                 
                     // Read the name of the attribute
                     string attributeName = currentToken.Value;
@@ -82,7 +88,9 @@ namespace TagScript.models {
                 // Eat the closing angle bracket
                 EatToken(TokenType.CLOSING_ANGLE_BRACKET);
                 // Enjoy the meal :)
-                return new Tag(tagName, attributeList, []);
+                Tag returnTag = new Tag(tagName, attributeList, []);
+                returnTag.Position = (idenToken.Line, idenToken.Column);
+                return returnTag;
             } else {
                 // Else, we need to actually do shit
                 
@@ -152,6 +160,12 @@ namespace TagScript.models {
                             break;
                         }
 
+                        case (TokenType.END_OF_FILE): {
+                            // Tag was never closed
+                            currentToken = idenToken;
+                            throw new Exception($"Tag '{tagName}' was never closed");
+                        }
+
                         default: {
                             // Except
                             throw new Exception($"Unexpected token type: {currentToken.Type}");
@@ -160,7 +174,9 @@ namespace TagScript.models {
                 }
 
                 // This SHOULD be what's returned basically
-                return new Tag(tagName, attributeList, body);
+                Tag returnTag = new Tag(tagName, attributeList, body);
+                returnTag.Position = (idenToken.Line, idenToken.Column);
+                return returnTag;
             }
         }
 
@@ -186,14 +202,8 @@ namespace TagScript.models {
                             returnList.Add(newTag);
                         } catch(Exception ex) {
                             // Show exception information
-                            Console.WriteLine(
-                                $""""
-                                EXCEPTION AT COLUMN {currentToken.Column}, LINE {currentToken.Line}
-                                --- FAULTY TOKEN: '{currentToken.Value}', of type {currentToken.Type}
-                                MSG: ## {ex.Message} ##
-                                """"
-                            );
-                            
+                            TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                                (currentToken.Line, currentToken.Column), currentToken.Value.Length);
                             return [];
                         }
                         break;
@@ -202,6 +212,7 @@ namespace TagScript.models {
                     case(TokenType.STRING_LITERAL): {
                         // Create the new tag
                         Tag newTag = new Tag("lit-text", new(){ {"body", currentToken.Value} },[]);
+                        newTag.Position = (currentToken.Line, currentToken.Column);
                         // Add it to the list
                         returnList.Add(newTag);
                         break;

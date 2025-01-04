@@ -55,7 +55,7 @@ namespace TagScript.models {
             public static DTNumber Parse(string textToParse)
             {
                 if(!double.TryParse(textToParse, out double parsedValue))
-                    throw new Exception($"String {textToParse} cannot be parsed to DataType {DataType.NUMBER}");
+                    throw new Exception($"'{textToParse}' cannot be parsed to DataType {DataType.NUMBER}");
                 else return new DTNumber(parsedValue);
             }
             public static bool TryParse(string textToParse, out DTNumber? numberHolder)
@@ -112,7 +112,7 @@ namespace TagScript.models {
             public static DTBoolean Parse(string textToParse)
             {
                 if(!bool.TryParse(textToParse, out bool parsedValue))
-                    throw new Exception($"String {textToParse} cannot be parsed to DataType {DataType.BOOLEAN}");
+                    throw new Exception($"'{textToParse}' cannot be parsed to DataType {DataType.BOOLEAN}");
                 else return new DTBoolean(parsedValue);
             }
             public static bool TryParse(string textToParse, out DTBoolean? booleanHolder)

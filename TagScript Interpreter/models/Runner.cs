@@ -1,8 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
+using System.Formats.Asn1;
 using System.Linq.Expressions;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
+using TagScript.main;
 
 namespace TagScript.models {
 
@@ -98,61 +100,66 @@ namespace TagScript.models {
             // Run each tag in the mastertag body
             for(int i = 0; i < MasterTag.Body.Count; i++) {
                 Tag tag = MasterTag.Body[i];
-                switch(tag.Type) {
-                    // If it's an output tag, run it
-                    case(TagType.OUTPUT): {
-                        tagRunner.RunOutputTag(tag, variables);
-                        break;
-                    }
-                    // If it's a variable tag, run it
-                    case(TagType.VARIABLE): {
-                        tagRunner.RunVariableTag(tag, variables);
-                        break;
-                    }
-                    // If it's an input, run it
-                    case(TagType.INPUT): {
-                        tagRunner.RunInputTag(tag, variables);
-                        break;
-                    }
-                    // If it's an eval, run it
-                    case(TagType.EVALUATE): {
-                        tagRunner.RunEvalTag(tag, variables);
-                        break;
-                    }
-                    // If it's an if, get all the adjacent blocks and run them
-                    case(TagType.IF): {
-                        List<Tag> ifBlock = [];
-
-                        ifBlock.Add(tag); // Add the if tag
-
-                        i++;
-                        while(i < MasterTag.Body.Count) {
-                            tag = MasterTag.Body[i];
-                            if(tag.Type == TagType.ELSEIF || tag.Type == TagType.ELSE) {
-                                ifBlock.Add(tag);
-                                i++;
-                                if(tag.Type == TagType.ELSE) break;
-                            } else break;
+                try {
+                    switch(tag.Type) {
+                        // If it's an output tag, run it
+                        case(TagType.OUTPUT): {
+                            tagRunner.RunOutputTag(tag, variables);
+                            break;
                         }
-                        i--;
+                        // If it's a variable tag, run it
+                        case(TagType.VARIABLE): {
+                            tagRunner.RunVariableTag(tag, variables);
+                            break;
+                        }
+                        // If it's an input, run it
+                        case(TagType.INPUT): {
+                            tagRunner.RunInputTag(tag, variables);
+                            break;
+                        }
+                        // Officially <set></set> will replace <eval></eval>
+                        case(TagType.SET): {
+                            tagRunner.RunSetTag(tag, variables);
+                            break;
+                        }
+                        // If it's an if, get all the adjacent blocks and run them
+                        case(TagType.IF): {
+                            List<Tag> ifBlock = [];
 
-                        tagRunner.RunIfBlock(ifBlock, variables);
-                        break;
+                            ifBlock.Add(tag); // Add the if tag
+
+                            i++;
+                            while(i < MasterTag.Body.Count) {
+                                tag = MasterTag.Body[i];
+                                if(tag.Type == TagType.ELSEIF || tag.Type == TagType.ELSE) {
+                                    ifBlock.Add(tag);
+                                    i++;
+                                    if(tag.Type == TagType.ELSE) break;
+                                } else break;
+                            }
+                            i--;
+
+                            tagRunner.RunIfBlock(ifBlock, variables);
+                            break;
+                        }
+                        // If it's a while tag, run it
+                        case(TagType.WHILE): {
+                            tagRunner.RunWhileBlock(tag, variables);
+                            break;
+                        }
+                        // If it's a call tag, run it
+                        case(TagType.CALL): {
+                            tagRunner.RunFunctionCall(tag, variables);
+                            break;
+                        }
+                        // If it's anything else, except
+                        default: {
+                            throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
+                        }
                     }
-                    // If it's a while tag, run it
-                    case(TagType.WHILE): {
-                        tagRunner.RunWhileBlock(tag, variables);
-                        break;
-                    }
-                    // If it's a call tag, run it
-                    case(TagType.CALL): {
-                        tagRunner.RunFunctionCall(tag, variables);
-                        break;
-                    }
-                    // If it's anything else, except
-                    default: {
-                        throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
-                    }
+                } catch(Exception ex) {
+                    TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                        tag.Position, tag.TagName.Length);
                 }
             }
         }
@@ -177,80 +184,86 @@ namespace TagScript.models {
                 bool autobreak = !outputTag.AttributeExists("no-autobreak");
                 // Go foreach tag in the body
                 foreach(Tag tag in outputTag.Body) {
-                    switch(tag.Type) {
-                        // If it's literal text, print it to the console
-                        case(TagType.LITERAL_TEXT): {
-                            // If the <lit-text/> tag doesn't have a body, throw an exception
-                            string body = RunLiteralTextTag(tag);
-                            // Print the body
-                            Console.Write(body);
-                            // If autobreak is on, add a line break
-                            if(autobreak) Console.WriteLine();
 
-                            break;
-                        }
-                        // If it's a number literal, print it to the console
-                        case(TagType.LITERAL_NUMBER): {
-                            // Get the value
-                            double value = RunLiteralNumberTag(tag);
-                            // Print it
-                            Console.Write(value:0.00);
-                            // If autobreak is on, add a line break
-                            if(autobreak) Console.WriteLine();
+                    try {
+                        switch(tag.Type) {
+                            // If it's literal text, print it to the console
+                            case(TagType.LITERAL_TEXT): {
+                                // If the <lit-text/> tag doesn't have a body, throw an exception
+                                string body = RunLiteralTextTag(tag);
+                                // Print the body
+                                Console.Write(body);
+                                // If autobreak is on, add a line break
+                                if(autobreak) Console.WriteLine();
 
-                            break;
-                        }
-                        // If it's a break tag, add a line break
-                        case(TagType.BREAK): {
-                            int amount = 1;
-                            // Try to get the amount attribute
-                            string? amountString = tag.GetOptionalAttribute("amount");
-                            if(amountString is not null) {
-                                if(!int.TryParse(amountString, out amount) || amount <= 0)
-                                    throw new Exception("br's 'amount' attribute must be a valid integer");
+                                break;
                             }
-                            // Print the requested amount
-                            for(int i = 0; i < amount; i++) Console.Write('\n');
+                            // If it's a number literal, print it to the console
+                            case(TagType.LITERAL_NUMBER): {
+                                // Get the value
+                                double value = RunLiteralNumberTag(tag);
+                                // Print it
+                                Console.Write(value:0.00);
+                                // If autobreak is on, add a line break
+                                if(autobreak) Console.WriteLine();
 
-                            break;
-                        }
-                        // If it's a get tag, let's get the var
-                        case(TagType.GET): {
-                            DataTypes.DTGeneric getData = RunGetTag(tag, scope);
-                            // Print it with no arguments
-                            Console.WriteLine(getData.Format([]));
-                            // If autobreak is on add a line brea
-                            if(autobreak) Console.WriteLine();
-                            
-                            break;
-                        }
-                        // If it's an operative tag, run it and format the result
-                        case(TagType.OPERATIVE): {
-                            DataTypes.DTGeneric getData = RunOperativeTag(tag, scope);
-                            // Print it
-                            Console.WriteLine(getData.Format([]));
-                            // If autobreak
-                            if(autobreak) Console.WriteLine();
+                                break;
+                            }
+                            // If it's a break tag, add a line break
+                            case(TagType.BREAK): {
+                                int amount = 1;
+                                // Try to get the amount attribute
+                                string? amountString = tag.GetOptionalAttribute("amount");
+                                if(amountString is not null) {
+                                    if(!int.TryParse(amountString, out amount) || amount <= 0)
+                                        throw new Exception("br's 'amount' attribute must be a valid integer");
+                                }
+                                // Print the requested amount
+                                for(int i = 0; i < amount; i++) Console.Write('\n');
 
-                            break;
-                        }
-                        // If it's a function call, run it and format the result
-                        case(TagType.CALL): {
-                            DataTypes.DTGeneric? getData = RunFunctionCall(tag, scope);
-                            // If the function didn't return anything
-                            if(getData is null)
-                                throw new Exception($"Function with no return value cannot be printed");
-                            // Print it
-                            Console.WriteLine(getData.Format([]));
-                            // If autobreak
-                            if(autobreak) Console.WriteLine();
+                                break;
+                            }
+                            // If it's a get tag, let's get the var
+                            case(TagType.GET): {
+                                DataTypes.DTGeneric getData = RunGetTag(tag, scope);
+                                // Print it with no arguments
+                                Console.WriteLine(getData.Format([]));
+                                // If autobreak is on add a line brea
+                                if(autobreak) Console.WriteLine();
+                                
+                                break;
+                            }
+                            // If it's an operative tag, run it and format the result
+                            case(TagType.OPERATIVE): {
+                                DataTypes.DTGeneric getData = RunOperativeTag(tag, scope);
+                                // Print it
+                                Console.WriteLine(getData.Format([]));
+                                // If autobreak
+                                if(autobreak) Console.WriteLine();
 
-                            break;
+                                break;
+                            }
+                            // If it's a function call, run it and format the result
+                            case(TagType.CALL): {
+                                DataTypes.DTGeneric? getData = RunFunctionCall(tag, scope);
+                                // If the function didn't return anything
+                                if(getData is null)
+                                    throw new Exception($"Function with no return value cannot be printed");
+                                // Print it
+                                Console.WriteLine(getData.Format([]));
+                                // If autobreak
+                                if(autobreak) Console.WriteLine();
+
+                                break;
+                            }
+                            // Else print a generic exception
+                            default: {
+                                throw new Exception($"Tag '{tag.TagName}' is either not supported by the output tag or does not exist");
+                            }
                         }
-                        // Else print a generic exception
-                        default: {
-                            throw new Exception($"Tag '{tag.TagName}' is either not supported by the output tag or does not exist");
-                        }
+                    } catch(Exception ex) {
+                        TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                            tag.Position, tag.TagName.Length);
                     }
                 }
             }
@@ -290,6 +303,20 @@ namespace TagScript.models {
                 DataTypes.DTGeneric resultingExpression = returnVariable.GetAsDataType();
                 // Return the thing
                 return resultingExpression;
+            }
+
+            public void RunSetTag(Tag setTag, List<Variable> scope) {
+                // Get the necessary attribute
+                string lookupName = setTag.GetAttribute("name");
+                // Look up the variable
+                Variable? returnVariable = LookUp(lookupName, scope);
+                // If we didn't find it, go fuck yourself
+                if(returnVariable is null)
+                    throw new Exception($"No variable named {lookupName} in the current scope");
+                // Else, let's get it
+                DataTypes.DTGeneric resultingExpression = RunAutoevaluativeTag(setTag, scope);
+                // Set it to the variable
+                returnVariable.SetValue(resultingExpression);
             }
 
             public string RunLiteralTextTag(Tag litTextTag) {
@@ -352,39 +379,44 @@ namespace TagScript.models {
                 int i = 0;
                 // Cycle through each tag
                 foreach(Tag tag in operativeTag.Body) {
-                    // Depending on the type of tag
-                    switch(tag.Type) {
-                        // In case it's a get tag
-                        case(TagType.GET): {
-                            operands[i] = RunGetTag(tag, scope);
-                            break;
+                    try {
+                        // Depending on the type of tag
+                        switch(tag.Type) {
+                            // In case it's a get tag
+                            case(TagType.GET): {
+                                operands[i] = RunGetTag(tag, scope);
+                                break;
+                            }
+                            // If it's a literal text tag
+                            case(TagType.LITERAL_TEXT): {
+                                operands[i] = new DataTypes.DTString(RunLiteralTextTag(tag));
+                                break;
+                            }
+                            // If it's a literal number tag
+                            case(TagType.LITERAL_NUMBER): {
+                                operands[i] = new DataTypes.DTNumber(RunLiteralNumberTag(tag));
+                                break;
+                            }
+                            // If it's an input tag
+                            case(TagType.INPUT): {
+                                operands[i] = RunInputTag(tag, scope);
+                                break;
+                            }
+                            // If it's another add tag
+                            case(TagType.OPERATIVE): {
+                                operands[i] = RunOperativeTag(tag, scope);
+                                break;
+                            }
+                            // Else, throw an exception
+                            default: {
+                                throw new Exception($"Tag {tag.TagName} not supported as a sum operand");
+                            }
                         }
-                        // If it's a literal text tag
-                        case(TagType.LITERAL_TEXT): {
-                            operands[i] = new DataTypes.DTString(RunLiteralTextTag(tag));
-                            break;
-                        }
-                        // If it's a literal number tag
-                        case(TagType.LITERAL_NUMBER): {
-                            operands[i] = new DataTypes.DTNumber(RunLiteralNumberTag(tag));
-                            break;
-                        }
-                        // If it's an input tag
-                        case(TagType.INPUT): {
-                            operands[i] = RunInputTag(tag, scope);
-                            break;
-                        }
-                        // If it's another add tag
-                        case(TagType.OPERATIVE): {
-                            operands[i] = RunOperativeTag(tag, scope);
-                            break;
-                        }
-                        // Else, throw an exception
-                        default: {
-                            throw new Exception($"Tag {tag.TagName} not supported as a sum operand");
-                        }
+                        i++;
+                    } catch(Exception ex) {
+                        TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                            tag.Position, tag.TagName.Length);
                     }
-                    i++;
                 }
                 // Return
                 return operands;
@@ -472,50 +504,59 @@ namespace TagScript.models {
 
             public DataTypes.DTGeneric RunAutoevaluativeTag(Tag autoEvalTag, List<Variable> scope) {
                 // Declare the expression result
-                DataTypes.DTGeneric resultingExpression;
+                DataTypes.DTGeneric? resultingExpression = null;
                 // An autoevaluative tag must have only ONE master tag
                 if(autoEvalTag.Body.Count != 1)
                     throw new Exception("An auto-evaluative tag must only have 1 tag inside it");
                 // Depending on the tag found
                 Tag masterTag = autoEvalTag.Body[0];
-                // Let's do a switch on the type
-                switch(masterTag.Type) {
-                    // In case it's a number literal
-                    case(TagType.LITERAL_NUMBER): {
-                        resultingExpression = new DataTypes.DTNumber(RunLiteralNumberTag(masterTag));
-                        break;
+                try {
+                    // Let's do a switch on the type
+                    switch(masterTag.Type) {
+                        // In case it's a number literal
+                        case(TagType.LITERAL_NUMBER): {
+                            resultingExpression = new DataTypes.DTNumber(RunLiteralNumberTag(masterTag));
+                            break;
+                        }
+                        // In case it's a string literal
+                        case(TagType.LITERAL_TEXT): {
+                            resultingExpression = new DataTypes.DTString(RunLiteralTextTag(masterTag));
+                            break;
+                        }
+                        // In case it's a get, run it
+                        case(TagType.GET): {
+                            resultingExpression = RunGetTag(masterTag, scope);
+                            break;
+                        }
+                        // In case it's an operative tag, also run it
+                        case(TagType.OPERATIVE): {
+                            resultingExpression = RunOperativeTag(masterTag, scope);
+                            break;
+                        }
+                        // In case it's a function call, run it
+                        case(TagType.CALL): {
+                            resultingExpression = RunFunctionCall(masterTag, scope) ??
+                                throw new Exception($"Function with no return value cannot be used in an expression");
+                            break;
+                        }
+                        // In case it's input, run it
+                        case(TagType.INPUT): {
+                            resultingExpression = RunInputTag(masterTag, scope);
+                            break;
+                        }
+                        // If it's anything else, BOOM
+                        default: {
+                            throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
+                        }
                     }
-                    // In case it's a string literal
-                    case(TagType.LITERAL_TEXT): {
-                        resultingExpression = new DataTypes.DTString(RunLiteralTextTag(masterTag));
-                        break;
-                    }
-                    // In case it's a get, run it
-                    case(TagType.GET): {
-                        resultingExpression = RunGetTag(masterTag, scope);
-                        break;
-                    }
-                    // In case it's an operative tag, also run it
-                    case(TagType.OPERATIVE): {
-                        resultingExpression = RunOperativeTag(masterTag, scope);
-                        break;
-                    }
-                    // In case it's a function call, run it
-                    case(TagType.CALL): {
-                        resultingExpression = RunFunctionCall(masterTag, scope) ??
-                            throw new Exception($"Function with no return value cannot be used in an expression");
-                        break;
-                    }
-                    // In case it's input, run it
-                    case(TagType.INPUT): {
-                        resultingExpression = RunInputTag(masterTag, scope);
-                        break;
-                    }
-                    // If it's anything else, BOOM
-                    default: {
-                        throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
-                    }
+                } catch(Exception ex) { 
+                    TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                        masterTag.Position, masterTag.TagName.Length);
                 }
+
+                if(resultingExpression is null) 
+                    throw new Exception($"Expression cannot be null");
+
                 // Return the result
                 return resultingExpression;
             }

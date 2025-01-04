@@ -1,4 +1,5 @@
 using Microsoft.Win32.SafeHandles;
+using TagScript.main;
 
 namespace TagScript.models {
     public enum TokenType {
@@ -68,6 +69,7 @@ namespace TagScript.models {
 
             // We start with an empty string literal
             string stringLiteral = "";
+            (int, int) initialPosition = (Line, Column);
             // Skip the " character
             Pass();
             // Refresh
@@ -76,12 +78,14 @@ namespace TagScript.models {
             while(!ch.Equals('"') && Position < SourceCode.Length) {
                 stringLiteral += ch;
                 Pass();
+                if(Position >= SourceCode.Length) break;
                 ch = SourceCode[Position];
             }
 
             // If the last character wasn't a ", the string wasn't terminated
             if(ch != '"') {
-                throw new Exception("String wasn't terminated");
+                TagxExceptions.RaiseException("String wasn't terminated",
+                    TagxExceptions.ExceptionType.FATAL, initialPosition);
             }
 
             return stringLiteral;
@@ -92,6 +96,7 @@ namespace TagScript.models {
 
             // We start with an empty number literal
             string numberLiteral = "";
+            (int, int) initialPosition = (Line, Column);
             // Skip the [ character
             Pass();
             // Refresh
@@ -100,12 +105,14 @@ namespace TagScript.models {
             while(!ch.Equals(']') && Position < SourceCode.Length) {
                 numberLiteral += ch;
                 Pass();
+                if(Position >= SourceCode.Length) break;
                 ch = SourceCode[Position];
             }
 
             // If the last character wasn't a ", the string wasn't terminated
             if(ch != ']') {
-                throw new Exception("Number wasn't terminated");
+                TagxExceptions.RaiseException("Number wasn't terminated",
+                    TagxExceptions.ExceptionType.FATAL, initialPosition);
             }
 
             return numberLiteral;
@@ -137,11 +144,15 @@ namespace TagScript.models {
                 returnList.Add(new Token(type, value, Column, Line));
             }
 
+            void PushTokenPos(TokenType type, string value, (int,int) linecolumn) {
+                returnList.Add(new Token(type, value, linecolumn.Item2, linecolumn.Item1));
+            }
+
             for(Position = 0; Position < SourceCode.Length; Pass()) {
                 char ch = SourceCode[Position];
 
                 if(ch.Equals('#')) {
-                    Console.WriteLine("Starting commented out");
+                    Program.TagxDebug.LogLine("Starting commented out");
                     // While a newline isn't found, it will all be commented out
                     while(!ch.Equals('\n') && Position < SourceCode.Length) {
                         Pass();
@@ -163,20 +174,26 @@ namespace TagScript.models {
                         continue;
                     } 
                 } else if(ch.Equals('"')) {
+                    // Initial position
+                    (int, int) initialPosition = (Line, Column);
                     // Read the string
                     string stringLiteral = ReadString();
                     // Push the token
-                    PushToken(TokenType.STRING_LITERAL, stringLiteral);
+                    PushTokenPos(TokenType.STRING_LITERAL, stringLiteral, initialPosition);
                 } else if(ch.Equals('[')) {
+                    // Initial position
+                    (int, int) initialPosition = (Line, Column);
                     // Read the number
                     string numberLiteral = ReadNumber();
                     // Push the token
-                    PushToken(TokenType.NUMBER_LITERAL, numberLiteral);
+                    PushTokenPos(TokenType.NUMBER_LITERAL, numberLiteral, initialPosition);
                 } else if(IsIdentifierFriendly(ch)) {
+                    // Initial position
+                    (int, int) initialPosition = (Line, Column);
                     // Read the identifier name
                     string identifierName = ReadIdentifier();
                     // Push the token
-                    PushToken(TokenType.IDENTIFIER, identifierName);
+                    PushTokenPos(TokenType.IDENTIFIER, identifierName, initialPosition);
                     // Offset by 1 so that the last non-alphanumeric character isn't ignored
                     Back();
                 } else {
