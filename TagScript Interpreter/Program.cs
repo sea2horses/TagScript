@@ -11,46 +11,59 @@ static class TagxExceptions {
         INFO
     }
 
+    private static bool TryEnvironment = false;
+    private static string? TryException = null;
+
+    public static void TryEnvironmentOn() { TryEnvironment = true; TryException = null; }
+    public static void TryEnvironmentOff() { TryEnvironment = false; }
+    public static string? GetTryException() { return TryException; }
+
     public static string? SourceCode = null;
 
     public static void RaiseException(string infoMessage,
         ExceptionType exType, (int, int) LineColumn, int cursorLength = 1) {
-            switch(exType) {
-                case(ExceptionType.FATAL): {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    break;
-                }
-                case(ExceptionType.WARNING): {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    break;
-                }
-                case(ExceptionType.INFO): {
-                    Console.ForegroundColor = ConsoleColor.Cyan;
-                    break;
-                }
-            }
 
-            Console.WriteLine($"### {exType} ###: {infoMessage}");
-            Console.WriteLine($"| AT LINE {LineColumn.Item1} : COLUMN {LineColumn.Item2}");
+            if(TryEnvironment) {
+                TryEnvironmentOff();
+                TryException = infoMessage;
+            } else {
+                switch(exType) {
+                    case(ExceptionType.FATAL): {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        break;
+                    }
+                    case(ExceptionType.WARNING): {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        break;
+                    }
+                    case(ExceptionType.INFO): {
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        break;
+                    }
+                }
 
-            if(SourceCode is not null) {
-                string[] sourceLines = SourceCode.Split('\n');
-                // Print 2 lines before if they exist
-                for(int i = Math.Max(LineColumn.Item1 - 2, 0); i <= LineColumn.Item1; i++) {
-                    Console.WriteLine($"|{i:0000}| {sourceLines[i - 1]}");
+                Console.WriteLine($"### {exType} ###: {infoMessage}");
+                Console.WriteLine($"| AT LINE {LineColumn.Item1} : COLUMN {LineColumn.Item2}");
+
+                if(SourceCode is not null) {
+                    string[] sourceLines = SourceCode.Split('\n');
+                    // Print 2 lines before if they exist
+                    for(int i = Math.Max(LineColumn.Item1 - 2, 0); i <= LineColumn.Item1; i++) {
+                        Console.WriteLine($"|{i:0000}| {sourceLines[i - 1]}");
+                    }
+                    // Print the arrow that points
+                    Console.Write("       ");
+                    for(int i = 0; i < LineColumn.Item2 - 1; i++) {
+                        char ch = sourceLines[LineColumn.Item1 - 1][i];
+                        Console.Write( (ch == '\t') ? '\t' : ' ');
+                    }
+                    for(int i = 0; i < cursorLength; i++) Console.Write("^");
+                    Console.WriteLine();
                 }
-                // Print the arrow that points
-                Console.Write("       ");
-                for(int i = 0; i < LineColumn.Item2 - 1; i++) {
-                    char ch = sourceLines[LineColumn.Item1 - 1][i];
-                    Console.Write( (ch == '\t') ? '\t' : ' ');
-                }
-                for(int i = 0; i < cursorLength; i++) Console.Write("^");
-                Console.WriteLine();
+                Console.ResetColor();
+                Environment.Exit(1);
             }
-            Console.ResetColor();
-            if(exType == ExceptionType.FATAL) Environment.Exit(1);
-        }
+    }
 }
 
 static class Program {

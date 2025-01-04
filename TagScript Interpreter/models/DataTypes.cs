@@ -77,7 +77,7 @@ namespace TagScript.models {
                 Value = val;
             }
 
-            public override string Format(string[] args) { return $"\"{Value}\""; }
+            public override string Format(string[] args) { return $"{Value}"; }
             public override DataType Type() { return DataType.STRING; }
             public override object Get() => Value;
             public override DTGeneric Clone() => new DTString(Value);

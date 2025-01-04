@@ -152,6 +152,17 @@ namespace TagScript.models {
                             tagRunner.RunFunctionCall(tag, variables);
                             break;
                         }
+                        // If it's a try block, get the try and the catch
+                        case(TagType.TRY): {
+                            if(i >= MasterTag.Body.Count)
+                                throw new Exception($"Try tag must have a 'catch' tag");
+                            Tag catchTag = MasterTag.Body[i + 1];
+                            if(catchTag.Type != TagType.CATCH)
+                                throw new Exception($"Try tag must have a 'catch' tag");
+                            tagRunner.RunTryCatch(tag, catchTag, variables);
+                            i++;
+                            break;
+                        }
                         // If it's anything else, except
                         default: {
                             throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
@@ -160,6 +171,7 @@ namespace TagScript.models {
                 } catch(Exception ex) {
                     TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
                         tag.Position, tag.TagName.Length);
+                    return;
                 }
             }
         }
@@ -338,7 +350,7 @@ namespace TagScript.models {
 
             public DataTypes.DTGeneric RunInputTag(Tag inputTag, List<Variable> scope) {
                 // Get the necessary attribute
-                string? saveTo = inputTag.GetOptionalAttribute("catch");
+                string? saveTo = inputTag.GetOptionalAttribute("save-to");
                 string? targetType = inputTag.GetOptionalAttribute("target-type");
                 // Get optional attributes
                 string? prompt = inputTag.GetOptionalAttribute("prompt");
@@ -693,6 +705,33 @@ namespace TagScript.models {
                 }
                 // Else, let's throw an error
                 throw new Exception($"Function {functionName} does not exist");
+            }
+
+            public void RunTryCatch(Tag tryTag, Tag catchTag, List<Variable> scope) {
+                // Check if the tag has a save-to attribute
+                string? value = catchTag.GetOptionalAttribute("save-to");
+                // In that case, look up the variable
+                Variable? variable = null;
+                // Look
+                if(value is not null) {
+                    variable = LookUp(value, scope) ??
+                        throw new Exception($"Variable {value} does not exist in the current scope");
+                }
+                // Let's try to run the try body
+                TagScriptInterpreter interpreter = new(tryTag, scope);
+                // Set up the try environment
+                TagxExceptions.TryEnvironmentOn();
+                // Run the interpreter
+                interpreter.Run();
+                // Check if there were any errors
+                if(TagxExceptions.GetTryException() is not null) {
+                    if(variable is not null)
+                        variable.SetValue(new DataTypes.DTString(TagxExceptions.GetTryException() ?? ""));
+                    // Run the catch block
+                    interpreter = new(catchTag, scope);
+                    // Run it
+                    interpreter.Run();
+                }
             }
         }
     }
