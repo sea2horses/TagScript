@@ -1,4 +1,4 @@
 # Number rounding program
 
-<var name="MyNum" type="number">
+<var name="MyNum" type="number"/>
 <var name="ErrMsg" type="string"/>

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 using TagScript.models.exceptions;
 
 namespace TagScript.models {
@@ -36,7 +37,8 @@ namespace TagScript.models {
                 }
                 // In case it's another value
                 default: {
-                    throw new Exception($"Type {Type} not supported in variable value assignment");
+                    throw TagxExceptions.RaiseException(4015, $"Type {Type} not supported in variable value assignment",
+                        ExceptionType.FATAL);
                 }
             }
         }
@@ -50,22 +52,46 @@ namespace TagScript.models {
         }
 
 
-        public DataTypes.DTGeneric GetAsDataType() {
-            if(!Set)
-                throw new Exception($"Trying to access variable {Name} while it is unset");
+        public DataTypes.DTGeneric GetAsDataType(Tag? tagAsking = null) {
+            if(!Set) {
+                if(tagAsking is null)
+                    throw TagxExceptions.RaiseException(4016, $"Trying to access variable {Name} while it is unset",
+                        ExceptionType.FATAL);
+                else
+                    throw TagxExceptions.RaiseException(4016, $"Trying to access variable {Name} while it is unset",
+                        ExceptionType.FATAL, tagAsking.Position, tagAsking.TagName.Length);
+            }
             return _valueHolder.Clone();
         }
 
-        public void SetValue(string value) {
-            // Set value with fixed type
-            SetValueHolder(value, Type);
+        public void SetValue(string value, Tag? askingTag = null) {
+            try {
+                // Set value with fixed type
+                SetValueHolder(value, Type);
+            } catch(Exception ex) {
+                // Return an exception
+                if(askingTag is null)
+                    throw TagxExceptions.RaiseException(4003, $"While setting variable {Name}: " + ex.Message, ExceptionType.FATAL);
+                else 
+                    throw TagxExceptions.RaiseException(4003, $"While setting variable {Name}: " + ex.Message, ExceptionType.FATAL,
+                        askingTag.Position, askingTag.TagName.Length);
+            }
             // Set is now true
             Set = true;
         }
 
-        public void SetValue(DataTypes.DTGeneric value) {
-            // Set the value with fixed type
-            SetValueHolder(value, Type);
+        public void SetValue(DataTypes.DTGeneric value, Tag? askingTag = null) {
+            try {
+                // Set value with fixed type
+                SetValueHolder(value, Type);
+            } catch(Exception ex) {
+                // Return an exception
+                if(askingTag is null)
+                    throw TagxExceptions.RaiseException(4011, $"While setting variable {Name}: " + ex.Message, ExceptionType.FATAL);
+                else 
+                    throw TagxExceptions.RaiseException(4011, $"While setting variable {Name}: " + ex.Message, ExceptionType.FATAL,
+                        askingTag.Position, askingTag.TagName.Length);
+            }
             // Set is now true
             Set = true;
         }
@@ -95,7 +121,6 @@ namespace TagScript.models {
             // Run each tag in the mastertag body
             for(int i = 0; i < MasterTag.Body.Count; i++) {
                 Tag tag = MasterTag.Body[i];
-                try {
                     switch(tag.Type) {
                         // If it's an output tag, run it
                         case(TagType.OUTPUT): {
@@ -150,10 +175,15 @@ namespace TagScript.models {
                         // If it's a try block, get the try and the catch
                         case(TagType.TRY): {
                             if(i >= MasterTag.Body.Count)
-                                throw new Exception($"Try tag must have a 'catch' tag");
+                                throw TagxExceptions.RaiseException(4017, $"All try tags must have a 'catch' tag",
+                                    ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+
                             Tag catchTag = MasterTag.Body[i + 1];
+
                             if(catchTag.Type != TagType.CATCH)
-                                throw new Exception($"Try tag must have a 'catch' tag");
+                                throw TagxExceptions.RaiseException(4017, $"All try tags must have a 'catch' tag",
+                                    ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+
                             tagRunner.RunTryCatch(tag, catchTag, variables);
                             i++;
                             break;
@@ -163,14 +193,25 @@ namespace TagScript.models {
                             DataTypes.DTGeneric? result = tagRunner.RunReturnTag(tag, variables);
                             return result;
                         }
+                        // Some tags for specific exceptions
+                        case(TagType.ELSE): {
+                            throw TagxExceptions.RaiseException(4001, $"'else' tag must go after an if/elif block",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+                        }
+                        case(TagType.ELSEIF): {
+                            throw TagxExceptions.RaiseException(4001, $"'elif' tags must have an 'if' leader block",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+                        }
+                        case(TagType.CATCH): {
+                            throw TagxExceptions.RaiseException(4001, $"'catch' tags must have a 'try' leader block",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+                        }
                         // If it's anything else, except
                         default: {
-                            throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
+                            throw TagxExceptions.RaiseException(4001, $"{tag.TagName} does not qualify as a standalone tag",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                         }
                     }
-                } catch(Exception ex) {
-                    throw new Exception($"Exception wasn't handled: {ex}");
-                }
             }
             // Return null if no return tag was present
             return null;
@@ -189,6 +230,13 @@ namespace TagScript.models {
                 }
                 // Return
                 return returnVariable;
+            }
+
+            public Variable ForcedLookUp(string name, List<Variable> scope, Tag askingTag) {
+                return
+                    LookUp(name, scope) ??
+                    throw TagxExceptions.RaiseException(4007, $"Variable '{name}' wasn't found in the current scope",
+                        ExceptionType.FATAL, askingTag.Position, askingTag.TagName.Length);
             }
 
             public void RunOutputTag(Tag outputTag, List<Variable> scope) {
@@ -226,7 +274,8 @@ namespace TagScript.models {
                                 string? amountString = tag.GetOptionalAttribute("amount");
                                 if(amountString is not null) {
                                     if(!int.TryParse(amountString, out amount) || amount <= 0)
-                                        throw new Exception("br's 'amount' attribute must be a valid integer");
+                                        throw TagxExceptions.RaiseException(4003, $"'amount' atribute on a 'br' tag must be a valid integer",
+                                            ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                                 }
                                 // Print the requested amount
                                 for(int i = 0; i < amount; i++) Console.Write('\n');
@@ -258,7 +307,8 @@ namespace TagScript.models {
                                 DataTypes.DTGeneric? getData = RunFunctionCall(tag, scope);
                                 // If the function didn't return anything
                                 if(getData is null)
-                                    throw new Exception($"Function with no return value cannot be printed");
+                                    throw TagxExceptions.RaiseException(4010, $"Function with no return value is not valid for output",
+                                        ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                                 // Print it
                                 Console.WriteLine(getData.Format([]));
                                 // If autobreak
@@ -268,7 +318,8 @@ namespace TagScript.models {
                             }
                             // Else print a generic exception
                             default: {
-                                throw new Exception($"Tag '{tag.TagName}' is either not supported by the output tag or does not exist");
+                                throw TagxExceptions.RaiseException(4001, $"Tag '{tag.TagName}' is not supported for output",
+                                    ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                             }
                         }
                 }
@@ -281,10 +332,12 @@ namespace TagScript.models {
 
                 // Is it a valid type?
                 if(!DataTypes.dataTypeBindings.TryGetValue(type, out DataType parsedDataType))
-                    throw new Exception($"{type} is not a valid datatype"); 
+                    throw TagxExceptions.RaiseException(4003, $"{type} is not valid datatype",
+                        ExceptionType.FATAL, varTag.Position, varTag.TagName.Length);
                 // Is the name occupied?
-                if(scope.Any(v => v.Name == name))
-                    throw new Exception($"A variable with name '{name}' already exists in the current scope");
+                if(LookUp(name, scope) is not null)
+                    throw TagxExceptions.RaiseException(4006, $"Variable {name} already exists in the current scope",
+                        ExceptionType.FATAL, varTag.Position, varTag.TagName.Length);
                 // Create the new variable 
                 Variable newVar = new(name, parsedDataType);
                 // If there's a value, assign it
@@ -301,12 +354,9 @@ namespace TagScript.models {
                 // Get the necessary attribute
                 string lookupName = getTag.GetAttribute("name");
                 // Look up the variable
-                Variable? returnVariable = LookUp(lookupName, scope);
-                // If we didn't find it, go fuck yourself
-                if(returnVariable is null)
-                    throw new Exception($"No variable named {lookupName} in the current scope");
+                Variable returnVariable = ForcedLookUp(lookupName, scope, getTag);
                 // Else, let's get it
-                DataTypes.DTGeneric resultingExpression = returnVariable.GetAsDataType();
+                DataTypes.DTGeneric resultingExpression = returnVariable.GetAsDataType(getTag);
                 // Return the thing
                 return resultingExpression;
             }
@@ -315,10 +365,7 @@ namespace TagScript.models {
                 // Get the necessary attribute
                 string lookupName = setTag.GetAttribute("name");
                 // Look up the variable
-                Variable? returnVariable = LookUp(lookupName, scope);
-                // If we didn't find it, go fuck yourself
-                if(returnVariable is null)
-                    throw new Exception($"No variable named {lookupName} in the current scope");
+                Variable returnVariable = ForcedLookUp(lookupName, scope, setTag);
                 // Else, let's get it
                 DataTypes.DTGeneric resultingExpression = RunAutoevaluativeTag(setTag, scope);
                 // Set it to the variable
@@ -337,7 +384,8 @@ namespace TagScript.models {
                 string value = litNumberTag.GetAttribute("value");
                 // Parse it
                 if(!double.TryParse(value, out double result))
-                    throw new Exception("Number literal tag content couldn't be converted");
+                    throw TagxExceptions.RaiseException(4003, $"Number literal '{value}' couldn't be converted",
+                        ExceptionType.FATAL, litNumberTag.Position, litNumberTag.TagName.Length);
                 // Return the result
                 return result;
             }
@@ -359,23 +407,22 @@ namespace TagScript.models {
 
                 if(saveTo is not null) {
                     // Let's get the variable
-                    Variable? variable = LookUp(saveTo, scope);
-                    // Throw exception if we don't find it
-                    if(variable is null)
-                        throw new Exception($"No variable named {variable} in the current scope");
+                    Variable variable = ForcedLookUp(saveTo, scope, inputTag);
                     // Save this into the variable
                     variable.SetValue(userInput);
                     // Return it too
-                    return variable.GetAsDataType();
+                    return variable.GetAsDataType(inputTag);
                 } else if(targetType is not null) {
                     // Let's get the target type
                     if(!DataTypes.dataTypeBindings.TryGetValue(targetType, out DataType parsedDataType))
-                        throw new Exception($"{targetType} is not a valid datatype");
+                        throw TagxExceptions.RaiseException(4003, $"{targetType} is not valid datatype",
+                            ExceptionType.FATAL, inputTag.Position, inputTag.TagName.Length);
                     // Generic Parse
                     DataTypes.DTGeneric newExpr = DataTypes.DTGeneric.GenericParse(userInput, parsedDataType);
                     // Return it
                     return newExpr;
-                } else throw new Exception("Input tag requires either a 'catch' or a 'target-type' attribute");
+                } else throw TagxExceptions.RaiseException(4004, "Input tag requires either a 'catch' or a 'target-type' attribute",
+                                ExceptionType.FATAL, inputTag.Position, inputTag.TagName.Length);
             }
 
             public DataTypes.DTGeneric[] CatchOperands(Tag operativeTag, List<Variable> scope) {
@@ -385,56 +432,69 @@ namespace TagScript.models {
                 int i = 0;
                 // Cycle through each tag
                 foreach(Tag tag in operativeTag.Body) {
-                    try {
-                        // Depending on the type of tag
-                        switch(tag.Type) {
-                            // In case it's a get tag
-                            case(TagType.GET): {
-                                operands[i] = RunGetTag(tag, scope);
-                                break;
-                            }
-                            // If it's a literal text tag
-                            case(TagType.LITERAL_TEXT): {
-                                operands[i] = new DataTypes.DTString(RunLiteralTextTag(tag));
-                                break;
-                            }
-                            // If it's a literal number tag
-                            case(TagType.LITERAL_NUMBER): {
-                                operands[i] = new DataTypes.DTNumber(RunLiteralNumberTag(tag));
-                                break;
-                            }
-                            // If it's an input tag
-                            case(TagType.INPUT): {
-                                operands[i] = RunInputTag(tag, scope);
-                                break;
-                            }
-                            // If it's another add tag
-                            case(TagType.OPERATIVE): {
-                                operands[i] = RunOperativeTag(tag, scope);
-                                break;
-                            }
-                            // Else, throw an exception
-                            default: {
-                                throw new Exception($"Tag {tag.TagName} not supported as a sum operand");
-                            }
+                    // Depending on the type of tag
+                    switch(tag.Type) {
+                        // In case it's a get tag
+                        case(TagType.GET): {
+                            operands[i] = RunGetTag(tag, scope);
+                            break;
                         }
-                        i++;
-                    } catch(Exception ex) {
-                        throw TagxExceptions.RaiseException(4000, $"Unhandled exception: {ex.Message}", ExceptionType.FATAL,
-                            tag.Position, tag.TagName.Length);
+                        // If it's a literal text tag
+                        case(TagType.LITERAL_TEXT): {
+                            operands[i] = new DataTypes.DTString(RunLiteralTextTag(tag));
+                            break;
+                        }
+                        // If it's a literal number tag
+                        case(TagType.LITERAL_NUMBER): {
+                            operands[i] = new DataTypes.DTNumber(RunLiteralNumberTag(tag));
+                            break;
+                        }
+                        // If it's an input tag
+                        case(TagType.INPUT): {
+                            operands[i] = RunInputTag(tag, scope);
+                            break;
+                        }
+                        // If it's another add tag
+                        case(TagType.OPERATIVE): {
+                            operands[i] = RunOperativeTag(tag, scope);
+                            break;
+                        }
+                        // If it's a function call, run it and format the result
+                        case(TagType.CALL): {
+                            DataTypes.DTGeneric? getData = RunFunctionCall(tag, scope);
+                            // If the function didn't return anything
+                            if(getData is null)
+                                throw TagxExceptions.RaiseException(4005, $"Function with no return value is not valid in an expression",
+                                    ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+                            operands[i] = getData;
+
+                            break;
+                        }
+                        // Else, throw an exception
+                        default: {
+                            throw TagxExceptions.RaiseException(4001, $"Tag '{tag.TagName}' is not supported in an expression",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
+                        }
                     }
+                    i++;
                 }
                 // Return
                 return operands;
             }
 
+            public void OperandAssert(Tag operativeTag, int operandAmount) {
+                // Get the amount of tags in it body
+                int bodyCount = operativeTag.Body.Count;
+                // There must be the operand count specified
+                if(bodyCount != operandAmount)
+                    throw TagxExceptions.RaiseException(4008, $"'{operativeTag.TagName}' must only have {operandAmount} operands (tags inside it)",
+                        ExceptionType.FATAL, operativeTag.Position, operativeTag.TagName.Length);
+            }
+
             public DataTypes.DTGeneric RunBinaryTag(Tag binaryTag, List<Variable> scope,
                 Func<DataTypes.DTGeneric, DataTypes.DTGeneric, DataTypes.DTGeneric> function) {
-                // Get the amount of tags in its body
-                int operandAmount = binaryTag.Body.Count;
-                // There must be only one operand
-                if(operandAmount != 2)
-                    throw new Exception($"A {binaryTag.TagName} tag must have exactly 2 operands");
+                // Assert the operand amount
+                OperandAssert(binaryTag, 2);
                 // Else, let's go
                 DataTypes.DTGeneric[] operands = CatchOperands(binaryTag, scope);
                 // Now let's negate
@@ -445,11 +505,8 @@ namespace TagScript.models {
 
             public DataTypes.DTGeneric RunUnaryTag(Tag unaryTag, List<Variable> scope,
                 Func<DataTypes.DTGeneric, DataTypes.DTGeneric> function) {
-                // Get the amount of tags in its body
-                int operandAmount = unaryTag.Body.Count;
-                // There must be only one operand
-                if(operandAmount != 1)
-                    throw new Exception($"A {unaryTag.TagName} tag must have exactly 1 operand");
+                // Assert the operand amount
+                OperandAssert(unaryTag, 1);
                 // Else, let's go
                 DataTypes.DTGeneric[] operands = CatchOperands(unaryTag, scope);
                 // Now let's negate
@@ -461,12 +518,14 @@ namespace TagScript.models {
             public DataTypes.DTGeneric RunOperativeTag(Tag operativeTag, List<Variable> scope) {
 
                 if(operativeTag.Type != TagType.OPERATIVE)
-                    throw new Exception("Evaluation tag only supports operative tags");
+                    throw TagxExceptions.RaiseException(4001, $"Operative tags ('{operativeTag.TagName}') only supports other operative tags",
+                        ExceptionType.FATAL, operativeTag.Position, operativeTag.TagName.Length);
                 // Get the operative type
                 OperativeTagType? operativeType = operativeTag.OperativeType(operativeTag.TagName);
                 // If it's not an operative type, throw an exception
                 if(operativeType is null)
-                    throw new Exception($"Tag {operativeTag} is not bound to an operative type, therefore it is not supported for operating");
+                    throw TagxExceptions.RaiseException(4009, $"Tag {operativeTag} is not bound to an operative type, therefore it is not supported for operating",
+                        ExceptionType.FATAL, operativeTag.Position, operativeTag.TagName.Length);
                 // Else, let's do a switch
                 switch(operativeType) {
                     // In case it's a sum tag
@@ -481,7 +540,8 @@ namespace TagScript.models {
                     case (OperativeTagType.NEGATE): return RunUnaryTag(operativeTag, scope, DataTypes.TypeOperations.Negate);
                     // Else, except
                     default: {
-                        throw new Exception($"Tag {operativeTag} is not yet supported by eval");
+                        throw TagxExceptions.RaiseException(4001, $"Tag '{operativeTag.TagName} is not yet supported",
+                            ExceptionType.FATAL, operativeTag.Position, operativeTag.TagName.Length);
                     }
                 }
             }
@@ -490,17 +550,13 @@ namespace TagScript.models {
                 // Get the save location
                 string? saveTo = evalTag.GetOptionalAttribute("catch");
                 // Check the body has precisely 1 tag
-                if(evalTag.Body.Count != 1)
-                    throw new Exception($"Eval tags must have precisely 1 tag inside them");
+                OperandAssert(evalTag, 1);
                 // Compute the result
                 DataTypes.DTGeneric result = RunOperativeTag(evalTag.Body[0], scope);
                 // If there's a variable ready for catching
                 if(saveTo is not null) {
                     // Now let's look for the variable
-                    Variable? variable = LookUp(saveTo, scope);
-                    // If it doesn't exist, except
-                    if(variable is null)
-                        throw new Exception($"No variable named {variable} in the current scope");
+                    Variable variable = ForcedLookUp(saveTo, scope, evalTag);
                     // Return it
                     variable.SetValue(result);
                 }   
@@ -512,8 +568,7 @@ namespace TagScript.models {
                 // Declare the expression result
                 DataTypes.DTGeneric? resultingExpression = null;
                 // An autoevaluative tag must have only ONE master tag
-                if(autoEvalTag.Body.Count != 1)
-                    throw new Exception("An auto-evaluative tag must only have 1 tag inside it");
+                OperandAssert(autoEvalTag, 1);
                 // Depending on the tag found
                 Tag masterTag = autoEvalTag.Body[0];
                 // Let's do a switch on the type
@@ -551,12 +606,14 @@ namespace TagScript.models {
                     }
                     // If it's anything else, BOOM
                     default: {
-                        throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
+                        throw TagxExceptions.RaiseException(4001, $"Tag '{masterTag.TagName}' is not supported in an auto-evaluative tag",
+                            ExceptionType.FATAL, masterTag.Position, masterTag.TagName.Length);
                     }
                 }
 
                 if(resultingExpression is null) 
-                    throw new Exception($"Expression cannot be null");
+                    throw TagxExceptions.RaiseException(4010, $"Resulting expression was void",
+                        ExceptionType.FATAL, autoEvalTag.Position, autoEvalTag.TagName.Length);
 
                 // Return the result
                 return resultingExpression;
@@ -570,7 +627,8 @@ namespace TagScript.models {
                 DataTypes.DTGeneric result = RunAutoevaluativeTag(conditionTag, scope);
                 // Check if it's a boolean
                 if(result.Type() != DataType.BOOLEAN)
-                    throw new Exception("The body of a conditional tag must resolve to a boolean");
+                    throw TagxExceptions.RaiseException(4011, $"Was expecting boolean resolution but got {result.Type()}",
+                        ExceptionType.FATAL, conditionTag.Position, conditionTag.TagName.Length);
                 // Now parse it
                 condition_result = (DataTypes.DTBoolean) result;
                 // Return the value
@@ -594,16 +652,19 @@ namespace TagScript.models {
                         if(tag.Type == TagType.CONDITION) {
                             // If we already had a condition tag, error it
                             if(conditionTag is not null)
-                                throw new Exception("There can't be more than one condition in an if/elif tag");
+                                throw TagxExceptions.RaiseException(4012, $"There can't be more than one 'condition' tag in an if/elif block",
+                                    ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                             conditionTag = tag;
                         } else bodies[i].Add(tag);
                     }
                     // If there's not a condition tag and it's not an else block, kill yourself
                     if(block.Type != TagType.ELSE && conditionTag is null)
-                        throw new Exception("Every if/elif tag must have a 'condition' tag inside it");
+                        throw TagxExceptions.RaiseException(4013, $"There must be at least one 'condition' tag in an if/elif block",
+                            ExceptionType.FATAL, block.Position, block.TagName.Length);
                     // If it's an else and there's a condition, also error it
                     if(block.Type == TagType.ELSE && conditionTag is not null)
-                        throw new Exception("An else tag can't have a 'condition' tag inside it");
+                        throw TagxExceptions.RaiseException(4001, $"An else block cannot have a condition tag inside it",
+                            ExceptionType.FATAL, conditionTag.Position, conditionTag.TagName.Length);
                     // Push it to the array
                     conditions[i] = conditionTag;
                 }
@@ -615,7 +676,8 @@ namespace TagScript.models {
                     // If any of them return true, the cycle is broken and any left stop executing
                     if(ifBlock[i].Type != TagType.ELSE) {
                         if(conditionTag is null) {
-                            throw new Exception("if and elseif blocks must have a 'condition' tag");
+                            throw TagxExceptions.RaiseException(4013, $"There must be at least one 'condition' tag in an if/elif block",
+                                ExceptionType.FATAL, ifBlock[i].Position, ifBlock[i].TagName.Length);
                         }
                         if(RunConditionalTag(conditionTag, scope)) {
                             // New body tag
@@ -647,13 +709,15 @@ namespace TagScript.models {
                     if(tag.Type == TagType.CONDITION) {
                         // If we already had a condition tag, error it
                         if(conditionTag is not null)
-                            throw new Exception("There can't be more than one condition in a while tag");
+                            throw TagxExceptions.RaiseException(4012, $"There can't be more than one 'condition' tag in a while block",
+                                ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                         conditionTag = tag;
                     } else body.Add(tag);
                 }
                 // If there's no conditional tag, error
                 if(conditionTag is null)
-                    throw new Exception("while blocks must have a 'condition' tag");
+                    throw TagxExceptions.RaiseException(4013, $"There must be at least one 'condition' tag in a while block",
+                        ExceptionType.FATAL, whileBlock.Position, whileBlock.TagName.Length);
                 // Create the masterTag
                 Tag bodyTag = new Tag("body", body);
                 // Now, while the conditional tag is true
@@ -676,7 +740,8 @@ namespace TagScript.models {
                     Tag tag = functionTag.Body[i];
                     // If the tag isn't an argument tag, error
                     if(tag.Type != TagType.ARGUMENT)
-                        throw new Exception($"Function call tag only supports argument tags");
+                        throw TagxExceptions.RaiseException(4001, $"Function call tag only supports argument tags",
+                            ExceptionType.FATAL, tag.Position, tag.TagName.Length);
                     // Get the tag 'name' argument
                     string? argumentName = tag.GetOptionalAttribute("name");
                     // Get the expression within
@@ -703,8 +768,7 @@ namespace TagScript.models {
                 Variable? variable = null;
                 // Look
                 if(value is not null) {
-                    variable = LookUp(value, scope) ??
-                        throw new Exception($"Variable {value} does not exist in the current scope");
+                    variable = ForcedLookUp(value, scope, tryTag);
                 }
                 // Let's try to run the try body
                 TagScriptInterpreter interpreter = new(tryTag, scope);
@@ -717,7 +781,7 @@ namespace TagScript.models {
                     // Run it
                     interpreter.Run();
                 } catch(Exception) {
-                    // We caught an exception, so get it
+                    // We caught an exception, go get it
                     if(variable is not null)
                         variable.SetValue(new DataTypes.DTString(TagxExceptions.LatestFatalException ?? ""));
                     // Create a new interpreter

@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System;
+using System.Diagnostics;
 using TagScript.models;
 using TagScript.models.exceptions;
 
@@ -73,6 +74,17 @@ static class Program {
         } catch(Exception ex) {
             Console.WriteLine($"Code interpreting has stopped due to an exception");
             if(ex.Message != string.Empty) Console.WriteLine(ex.Message);
+            Console.WriteLine($"\nWould you like to open the documentation? (Y/n)");
+            if( (Console.ReadLine() ?? "").ToUpper() == "Y" ) {
+                // Thanks a lot BERZ in StackOverflow :33
+                // https://stackoverflow.com/questions/10989709/open-a-html-file-using-default-web-browser
+                var p = new Process();
+                p.StartInfo = new ProcessStartInfo(@"docs\index.html")
+                {
+                    UseShellExecute = true
+                };
+                p.Start();
+            }
         }
     }
 }

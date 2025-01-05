@@ -30,7 +30,6 @@ static class TagxExceptions {
         { 2007, "TAG WASN'T CLOSED" },
         { 2008, "DUPLICATE ATTRIBUTE DECLARATION" },
         { 2009, "ATTRIBUTE VALUE NOT FOUND" },
-        { 2010, "EXCEPTION WASN'T HANDLED" },
 
         // Runner Errors
         { 4000, "IRUNNER_ERROR | EXCEPTION WASN'T HANDLED" },
@@ -43,12 +42,14 @@ static class TagxExceptions {
         { 4008, "OPERAND NUMBER MISMATCH" },
         { 4009, "IRUNNER_ERROR | TAG BINDING MISSING" },
         { 4010, "UNEXPECTED VOID" },
-        { 4011, "CONDITIONAL TYPE ERROR" },
-        { 4012, "DUPLICATE CONDITIONAL" },
-        { 4013, "MISSING CONDITION" },
+        { 4011, "INCORRECT TYPE RETURNED" },
+        { 4012, "DUPLICATE TAG" },
+        { 4013, "MISSING TAG" },
         { 4014, "FUNCTION DOESN'T EXIST" },
         { 4015, "IRUNNER_ERROR | VARIABLE TYPE ISN'T SUPPORTED" },
         { 4016, "UNSET ACCESS ERROR" },
+        { 4017, "CATCH BLOCK NOT FOUND" },
+        { 4018, "USER DEFINED EXCEPTION" },
 
         // Exception handler
         { 5000, "IEXCEPTHANDLER_ERROR | ERROR CODE ISN'T REOCGNIZED" }
@@ -125,6 +126,6 @@ static class TagxExceptions {
                 TryEnvironmentOff();
             }
 
-            throw new Exception();
+            throw new Exception($"ERR-{errorNumber}: {errorMessage}");
     }
 }

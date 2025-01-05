@@ -1,3 +1,5 @@
+using TagScript.models.exceptions;
+
 namespace TagScript.models {
 
     public enum DataType {
@@ -36,7 +38,8 @@ namespace TagScript.models {
             // Assert generic function
             public DTGeneric Assert(DataType type) {
                 if(type != Type())
-                    throw new Exception($"Was expecting {Type()} but got {type}");
+                    throw TagxExceptions.RaiseException(4011, $"Was expecting {Type()} but got {type}",
+                        ExceptionType.FATAL);
                 return this;
             }
         }

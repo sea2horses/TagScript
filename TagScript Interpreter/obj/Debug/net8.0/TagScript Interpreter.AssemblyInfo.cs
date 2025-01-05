@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TagScript Interpreter")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e30a0621fa83c6746e8229c9598ce3c5d28267d9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+75081f0236f9700deef8e39735caf12ff847b46d")]
 [assembly: System.Reflection.AssemblyProductAttribute("TagScript Interpreter")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TagScript Interpreter")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

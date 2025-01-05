@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using TagScript.models.exceptions;
 
 namespace TagScript.models {
 
@@ -122,7 +123,8 @@ namespace TagScript.models {
 
         public string GetAttribute(string name) {
             if(!this.Attributes.TryGetValue(name, out string? value))
-                throw new Exception("Tag '{Name}' is missing attribute '{name}'");
+                throw TagxExceptions.RaiseException(4004, $"Tag '{this.TagName}' is missing attribute '{name}'",
+                    ExceptionType.FATAL, this.Position, this.TagName.Length);
             
             return value ?? "";
         }

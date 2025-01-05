@@ -128,11 +128,15 @@ namespace TagScript.models {
                             if(currentToken.Type != TokenType.FORWARD_SLASH)
                                 body.Add(ParseTag());
                             else {
+                                if(currentToken.Type != TokenType.FORWARD_SLASH)
+                                    throw TagxExceptions.RaiseException(2003, $"Was expecting a new tag or a closing tag but got {currentToken.Value}",
+                                        ExceptionType.FATAL, (currentToken.Line, currentToken.Column), currentToken.Value.Length);
                                 // Eat the token
                                 EatToken(TokenType.FORWARD_SLASH);
                                 // You know the drill
                                 if(currentToken.Type != TokenType.IDENTIFIER)
-                                    throw new Exception("Was expecting identifier");
+                                    throw TagxExceptions.RaiseException(2003, $"Was expecting the name of the closing tag (detected:'{tagName}')",
+                                        ExceptionType.FATAL, (currentToken.Line, currentToken.Column), currentToken.Value.Length);
                                 // Get the value of the identifier
                                 string closingName = currentToken.Value;
                                 // Check that the names match
@@ -142,7 +146,8 @@ namespace TagScript.models {
                                 EatToken(TokenType.IDENTIFIER);
                                 // Eat the final square bracket
                                 if(currentToken.Type != TokenType.CLOSING_ANGLE_BRACKET)
-                                    throw new Exception("Was expecting a closing angle bracket");
+                                    throw TagxExceptions.RaiseException(2003, $"Was expecting a closing angle bracket '>'",
+                                        ExceptionType.FATAL, (currentToken.Line, currentToken.Column), currentToken.Value.Length);
                                 EatToken(TokenType.CLOSING_ANGLE_BRACKET);
                                 // Flag to terminate the loop
                                 terminate_loop = true;
