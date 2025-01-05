@@ -1,70 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System;
 using TagScript.models;
+using TagScript.models.exceptions;
 
 namespace TagScript.main;
 
-static class TagxExceptions {
-    public enum ExceptionType {
-        FATAL,
-        WARNING,
-        INFO
-    }
-
-    private static bool TryEnvironment = false;
-    private static string? TryException = null;
-
-    public static void TryEnvironmentOn() { TryEnvironment = true; TryException = null; }
-    public static void TryEnvironmentOff() { TryEnvironment = false; }
-    public static string? GetTryException() { return TryException; }
-
-    public static string? SourceCode = null;
-
-    public static void RaiseException(string infoMessage,
-        ExceptionType exType, (int, int) LineColumn, int cursorLength = 1) {
-
-            if(TryEnvironment) {
-                TryEnvironmentOff();
-                TryException = infoMessage;
-            } else {
-                switch(exType) {
-                    case(ExceptionType.FATAL): {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        break;
-                    }
-                    case(ExceptionType.WARNING): {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        break;
-                    }
-                    case(ExceptionType.INFO): {
-                        Console.ForegroundColor = ConsoleColor.Cyan;
-                        break;
-                    }
-                }
-
-                Console.WriteLine($"### {exType} ###: {infoMessage}");
-                Console.WriteLine($"| AT LINE {LineColumn.Item1} : COLUMN {LineColumn.Item2}");
-
-                if(SourceCode is not null) {
-                    string[] sourceLines = SourceCode.Split('\n');
-                    // Print 2 lines before if they exist
-                    for(int i = Math.Max(LineColumn.Item1 - 2, 0); i <= LineColumn.Item1; i++) {
-                        Console.WriteLine($"|{i:0000}| {sourceLines[i - 1]}");
-                    }
-                    // Print the arrow that points
-                    Console.Write("       ");
-                    for(int i = 0; i < LineColumn.Item2 - 1; i++) {
-                        char ch = sourceLines[LineColumn.Item1 - 1][i];
-                        Console.Write( (ch == '\t') ? '\t' : ' ');
-                    }
-                    for(int i = 0; i < cursorLength; i++) Console.Write("^");
-                    Console.WriteLine();
-                }
-                Console.ResetColor();
-                Environment.Exit(1);
-            }
-    }
-}
 
 static class Program {
 
@@ -104,30 +44,35 @@ static class Program {
         Console.WriteLine($"Source Code: \n{sourceCode}");
         TagxExceptions.SourceCode = sourceCode;
 
-        Tokenizer tokenizer = new(sourceCode);
-        List<Token> tokenList = tokenizer.Parse();
+        try {
+            Tokenizer tokenizer = new(sourceCode);
+            List<Token> tokenList = tokenizer.Parse();
 
-        Console.WriteLine("Tokenizing Output:\n");
-        foreach(Token token in tokenList) {
-            Console.WriteLine(token);
-        }
+            Console.WriteLine("Tokenizing Output:\n");
+            foreach(Token token in tokenList) {
+                Console.WriteLine(token);
+            }
 
-        TagParser tagParser = new(tokenList);
-        Console.WriteLine("\n\nTag Parsing Output:\n");
-        List<Tag> tagList = tagParser.ParseList();
-        Tag masterTag = new Tag("program", tagList);
+            TagParser tagParser = new(tokenList);
+            Console.WriteLine("\n\nTag Parsing Output:\n");
+            List<Tag> tagList = tagParser.ParseList();
+            Tag masterTag = new Tag("program", tagList);
 
-        Console.WriteLine("\n\nTag Tree:");
-        TagFormatter.DisplayTag(masterTag); 
+            Console.WriteLine("\n\nTag Tree:");
+            TagFormatter.DisplayTag(masterTag); 
 
-        Console.WriteLine("\n\nRunner Output:");
-        TagScriptInterpreter tagx = new(masterTag);
+            Console.WriteLine("\n\nRunner Output:");
+            TagScriptInterpreter tagx = new(masterTag);
 
-        tagx.Run();
+            tagx.Run();
 
-        Console.WriteLine("\n\nVariable dump:");
-        foreach(Variable var in tagx.variables) {
-            Console.WriteLine(var);
+            Console.WriteLine("\n\nVariable dump:");
+            foreach(Variable var in tagx.variables) {
+                Console.WriteLine(var);
+            }
+        } catch(Exception ex) {
+            Console.WriteLine($"Code interpreting has stopped due to an exception");
+            if(ex.Message != string.Empty) Console.WriteLine(ex.Message);
         }
     }
 }

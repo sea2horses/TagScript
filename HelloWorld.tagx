@@ -1,18 +1,4 @@
 # Number rounding program
 
-<var name="MyNum" type="number"/>
+<var name="MyNum" type="number">
 <var name="ErrMsg" type="string"/>
-
-<try>
-    <input save-to="MyNum" prompt="Type a number: " no-autobreak/>
-    <out no-autobreak>
-        "Your number is: "
-        <get name="MyNum"/>
-    </out>
-</try>
-<catch save-to="ErrMsg">
-    <out>
-        "Error handled:"
-        <get name="ErrMsg"/>
-    </out>
-</catch>

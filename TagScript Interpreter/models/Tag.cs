@@ -25,7 +25,8 @@ namespace TagScript.models {
         ARGUMENT,
         SET,
         TRY,
-        CATCH
+        CATCH,
+        RETURN
     }
 
     public enum OperativeTagType {
@@ -68,6 +69,7 @@ namespace TagScript.models {
             {"arg", TagType.ARGUMENT},
             {"try", TagType.TRY},
             {"catch",TagType.CATCH},
+            {"return", TagType.RETURN},
             {"add", TagType.OPERATIVE},
             {"subtract",TagType.OPERATIVE},
             {"multiply",TagType.OPERATIVE},

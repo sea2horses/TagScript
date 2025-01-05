@@ -1,5 +1,5 @@
-using Microsoft.Win32.SafeHandles;
 using TagScript.main;
+using TagScript.models.exceptions;
 
 namespace TagScript.models {
     public enum TokenType {
@@ -84,8 +84,8 @@ namespace TagScript.models {
 
             // If the last character wasn't a ", the string wasn't terminated
             if(ch != '"') {
-                TagxExceptions.RaiseException("String wasn't terminated",
-                    TagxExceptions.ExceptionType.FATAL, initialPosition);
+                throw TagxExceptions.RaiseException(1001, "String wasn't terminated",
+                   ExceptionType.FATAL, initialPosition);
             }
 
             return stringLiteral;
@@ -111,8 +111,8 @@ namespace TagScript.models {
 
             // If the last character wasn't a ", the string wasn't terminated
             if(ch != ']') {
-                TagxExceptions.RaiseException("Number wasn't terminated",
-                    TagxExceptions.ExceptionType.FATAL, initialPosition);
+                throw TagxExceptions.RaiseException(1002, "Number wasn't terminated",
+                    ExceptionType.FATAL, initialPosition);
             }
 
             return numberLiteral;
@@ -200,9 +200,10 @@ namespace TagScript.models {
                     // Try to get the token type
                     if(charTypes.TryGetValue(ch, out TokenType type)) {
                         PushToken(type, ch.ToString());
-                    }
-                    // Else, push an unrecognized token
-                    else PushToken(TokenType.UNRECOGNIZED, ch.ToString());
+                    } else
+                    // Else, whoop
+                    throw TagxExceptions.RaiseException(1000, $"'{ch}' is not a valid token",
+                        ExceptionType.FATAL, (Line, Column));
                 }
             }
 

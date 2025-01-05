@@ -1,10 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
-using System.Formats.Asn1;
-using System.Linq.Expressions;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using TagScript.main;
+using TagScript.models.exceptions;
 
 namespace TagScript.models {
 
@@ -94,7 +89,7 @@ namespace TagScript.models {
                 this.variables = initialVariables;
             }
 
-        public void Run() {
+        public DataTypes.DTGeneric? Run() {
             // Create a tagRunner
             TagRunner tagRunner = new();
             // Run each tag in the mastertag body
@@ -163,17 +158,22 @@ namespace TagScript.models {
                             i++;
                             break;
                         }
+                        // If it's a return block, run it and return
+                        case(TagType.RETURN): {
+                            DataTypes.DTGeneric? result = tagRunner.RunReturnTag(tag, variables);
+                            return result;
+                        }
                         // If it's anything else, except
                         default: {
                             throw new Exception($"Tag {tag.TagName} does not qualify as a stand-alone tag");
                         }
                     }
                 } catch(Exception ex) {
-                    TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
-                        tag.Position, tag.TagName.Length);
-                    return;
+                    throw new Exception($"Exception wasn't handled: {ex}");
                 }
             }
+            // Return null if no return tag was present
+            return null;
         }
 
         class TagRunner() {
@@ -196,8 +196,6 @@ namespace TagScript.models {
                 bool autobreak = !outputTag.AttributeExists("no-autobreak");
                 // Go foreach tag in the body
                 foreach(Tag tag in outputTag.Body) {
-
-                    try {
                         switch(tag.Type) {
                             // If it's literal text, print it to the console
                             case(TagType.LITERAL_TEXT): {
@@ -273,10 +271,6 @@ namespace TagScript.models {
                                 throw new Exception($"Tag '{tag.TagName}' is either not supported by the output tag or does not exist");
                             }
                         }
-                    } catch(Exception ex) {
-                        TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
-                            tag.Position, tag.TagName.Length);
-                    }
                 }
             }
 
@@ -426,7 +420,7 @@ namespace TagScript.models {
                         }
                         i++;
                     } catch(Exception ex) {
-                        TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
+                        throw TagxExceptions.RaiseException(4000, $"Unhandled exception: {ex.Message}", ExceptionType.FATAL,
                             tag.Position, tag.TagName.Length);
                     }
                 }
@@ -522,48 +516,43 @@ namespace TagScript.models {
                     throw new Exception("An auto-evaluative tag must only have 1 tag inside it");
                 // Depending on the tag found
                 Tag masterTag = autoEvalTag.Body[0];
-                try {
-                    // Let's do a switch on the type
-                    switch(masterTag.Type) {
-                        // In case it's a number literal
-                        case(TagType.LITERAL_NUMBER): {
-                            resultingExpression = new DataTypes.DTNumber(RunLiteralNumberTag(masterTag));
-                            break;
-                        }
-                        // In case it's a string literal
-                        case(TagType.LITERAL_TEXT): {
-                            resultingExpression = new DataTypes.DTString(RunLiteralTextTag(masterTag));
-                            break;
-                        }
-                        // In case it's a get, run it
-                        case(TagType.GET): {
-                            resultingExpression = RunGetTag(masterTag, scope);
-                            break;
-                        }
-                        // In case it's an operative tag, also run it
-                        case(TagType.OPERATIVE): {
-                            resultingExpression = RunOperativeTag(masterTag, scope);
-                            break;
-                        }
-                        // In case it's a function call, run it
-                        case(TagType.CALL): {
-                            resultingExpression = RunFunctionCall(masterTag, scope) ??
-                                throw new Exception($"Function with no return value cannot be used in an expression");
-                            break;
-                        }
-                        // In case it's input, run it
-                        case(TagType.INPUT): {
-                            resultingExpression = RunInputTag(masterTag, scope);
-                            break;
-                        }
-                        // If it's anything else, BOOM
-                        default: {
-                            throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
-                        }
+                // Let's do a switch on the type
+                switch(masterTag.Type) {
+                    // In case it's a number literal
+                    case(TagType.LITERAL_NUMBER): {
+                        resultingExpression = new DataTypes.DTNumber(RunLiteralNumberTag(masterTag));
+                        break;
                     }
-                } catch(Exception ex) { 
-                    TagxExceptions.RaiseException(ex.Message, TagxExceptions.ExceptionType.FATAL,
-                        masterTag.Position, masterTag.TagName.Length);
+                    // In case it's a string literal
+                    case(TagType.LITERAL_TEXT): {
+                        resultingExpression = new DataTypes.DTString(RunLiteralTextTag(masterTag));
+                        break;
+                    }
+                    // In case it's a get, run it
+                    case(TagType.GET): {
+                        resultingExpression = RunGetTag(masterTag, scope);
+                        break;
+                    }
+                    // In case it's an operative tag, also run it
+                    case(TagType.OPERATIVE): {
+                        resultingExpression = RunOperativeTag(masterTag, scope);
+                        break;
+                    }
+                    // In case it's a function call, run it
+                    case(TagType.CALL): {
+                        resultingExpression = RunFunctionCall(masterTag, scope) ??
+                            throw new Exception($"Function with no return value cannot be used in an expression");
+                        break;
+                    }
+                    // In case it's input, run it
+                    case(TagType.INPUT): {
+                        resultingExpression = RunInputTag(masterTag, scope);
+                        break;
+                    }
+                    // If it's anything else, BOOM
+                    default: {
+                        throw new Exception($"Tag '{masterTag.TagName}' of type {masterTag.Type} is not supported in an auto-evaluative tag");
+                    }
                 }
 
                 if(resultingExpression is null) 
@@ -721,17 +710,26 @@ namespace TagScript.models {
                 TagScriptInterpreter interpreter = new(tryTag, scope);
                 // Set up the try environment
                 TagxExceptions.TryEnvironmentOn();
-                // Run the interpreter
-                interpreter.Run();
-                // Check if there were any errors
-                if(TagxExceptions.GetTryException() is not null) {
-                    if(variable is not null)
-                        variable.SetValue(new DataTypes.DTString(TagxExceptions.GetTryException() ?? ""));
-                    // Run the catch block
-                    interpreter = new(catchTag, scope);
+                // Clear up the latest fatal error
+                TagxExceptions.CleanLatestException();
+                // Now let's try
+                try {
                     // Run it
                     interpreter.Run();
+                } catch(Exception) {
+                    // We caught an exception, so get it
+                    if(variable is not null)
+                        variable.SetValue(new DataTypes.DTString(TagxExceptions.LatestFatalException ?? ""));
+                    // Create a new interpreter
+                    interpreter = new(catchTag, scope);
+                    // Now run the catch block
+                    interpreter.Run();
                 }
+            }
+
+            public DataTypes.DTGeneric? RunReturnTag(Tag returnTag, List<Variable> scope) {
+                // If there's no body, don't return anything, if there is, run the evaluation
+                return (returnTag.Body.Count == 0) ? null : RunAutoevaluativeTag(returnTag, scope);
             }
         }
     }
