@@ -1,13 +1,598 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link href="styles.css" rel="stylesheet" />
-        <title>Document</title>
-    </head>
-    <body>
-        <h1>TagScript Documentation</h1>
-        <p>Unfinished! :(</p>
-    </body>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TagScript Docs</title>
+
+    <link href="genericstyle.css" rel="stylesheet" />
+
+    <!-- Script that sets the mood -->
+    <script type="module">
+        import { get_header, get_sidebar } from './layout/layout.js';
+
+        const sidebar_info = {
+            'Basic Syntax': {
+                'Basic Tag Structure': '#basic-tag-structure',
+                'Self Closing Tags': '#self-closing-tags',
+                Attributes: '#attributes',
+                Nesting: '#nesting',
+            },
+            'Memory & Data': {
+                'Data Types': '#data-types',
+                'Data Literals': '#data-literals',
+                Variables: '#variables',
+                Constants: '#constants',
+            },
+            Expressionism: {
+                'Operative Tags': '#operative-tags',
+                'Auto-Operative Tags': '#auto-operative-tags',
+            },
+            'Control Flow': {
+                'If / Elif / Else': '#if-elif-else',
+                While: '#while',
+                For: '#for',
+            },
+            Functions: {
+                'Built-In Functions': '#builtin-functions',
+                'User defined Functions': '#user-defined-functions',
+            },
+            'Error Handling': {
+                'Try / Catch': '#try-catch',
+                'Error Format': '#error-format',
+                'Internal Errors': '#internal-errors',
+            },
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const header_container = document.querySelector('.header');
+            header_container.innerHTML = get_header();
+
+            const sidebar_container = document.querySelector('.sidebar');
+            sidebar_container.innerHTML = get_sidebar(sidebar_info);
+        });
+    </script>
+</head>
+
+<body>
+    <!-- Basic Layout of the page -->
+    <div class="page-content">
+        <div class="header"></div>
+        <div class="sidebar"></div>
+        <div class="main">
+            <!-- Content goes here -->
+            <div class="content-section">
+                <h2>Basic Syntax</h2>
+                <hr />
+                <h3 id="basic-tag-structure">Basic Tag Structure</h3>
+                <p>
+                    A tag in TagScript is opened with an opening angle
+                    bracket <code>&lt;</code> and closed with a closing one
+                    <code>&gt;</code>. There must be a tag which opens the
+                    body <code>&lt;example&gt;</code> and a tag that closes
+                    it <code>&lt;/example&gt;</code>. Inside the opening
+                    tag, the programmer must specify the name of the tag to
+                    use. Tags also have attributes that can be declared on
+                    the opening tag. Everything between the opening and
+                    closing tag is considered 'body'.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;ex</span> <span style="color: #a6e22e">foo=</span><span style="color: #e6db74">&quot;bar&quot;</span><span style="color: #f92672">&gt;</span>
+    # Body goes here...
+<span style="color: #f92672">&lt;/ex&gt;</span>
+</pre>
+                </div>
+
+                <p>
+                    Here, we have the 'ex' tag, which defines a 'foo'
+                    attribute with a value of "bar". The
+                    <code>#</code> symbol is used to mark a comment in
+                    TagScript, in this case, it marks where the body is.
+                </p>
+                <h3 id="self-closing-tags">Self Closing Tags</h3>
+                <p>
+                    Some tags in TagScript do not need a body to be used, so
+                    they can be written as self-closing tags. These are
+                    declared by putting a forward slash just before the
+                    closing bracket in a regular opening tag.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;ex</span> <span style="color: #a6e22e">foo=</span><span style="color: #e6db74">&quot;bar&quot;</span><span style="color: #f92672">/&gt;</span>
+</pre>
+                </div>
+
+                <p>This is equivalent to:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;ex</span> <span style="color: #a6e22e">foo=</span><span style="color: #e6db74">&quot;bar&quot;</span><span style="color: #f92672">&gt;&lt;/ex&gt;</span>
+</pre>
+                </div>
+
+                <h3 id="attributes">Attributes</h3>
+                <p>
+                    Attributes in TagScript are the primary way to pass
+                    information on how a tag should be executed. Attributes
+                    can be self-declared or require a value.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output&gt;</span>
+    &quot;Hello World!&quot;
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>This displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">Hello World!
+</pre>
+                </div>
+
+                <p>
+                    The <code>output</code> tag accepts multiple tags in its
+                    body, so we can print multiple things in one go.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output&gt;</span>
+    &quot;Hello &quot;
+    &quot;World!&quot;
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>This displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">Hello 
+World!
+</pre>
+                </div>
+
+                <p>
+                    To change this behavior, we can add the
+                    <code>no-autobreak</code> attribute:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output</span> <span style="color: #a6e22e">no-autobreak</span><span style="color: #f92672">&gt;</span>
+    &quot;Hello &quot;
+    &quot;World!&quot;
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>This now displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">Hello World!
+</pre>
+                </div>
+
+                <h3 id="nesting">Nesting</h3>
+                <p>
+                    Nesting is TagScript's way of passing static and non-static information directly
+                    into a tag via its body. For example:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;var</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;foo&quot;</span> <span style="color: #a6e22e">type=</span><span style="color: #e6db74">&quot;string&quot;</span><span style="color: #f92672">&gt;</span>
+    &quot;Hi!&quot;
+<span style="color: #f92672">&lt;/var&gt;</span>
+</pre>
+                </div>
+
+                <p>
+                    This will directly insert the string literal "Hi!" into
+                    the value of the variable 'foo'. We can then insert the
+                    value of 'foo' into an output tag by using the
+                    <code>get</code> tag:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output&gt;</span>
+    <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;foo&quot;</span><span style="color: #f92672">/&gt;</span>
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>This displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">Hi!
+</pre>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2>Memory & Data</h2>
+                <hr>
+                <h3 id="data-types">Data Types</h3>
+                <p>The three data types in TagScript are:</p>
+                <ul>
+                    <li>string</li>
+                    <li>number</li>
+                    <li>boolean</li>
+                </ul>
+                <h3 id="data-literals">Data Literals</h3>
+                <p>
+                    Data literals are shorthands for the
+                    <code>&lt;text-lit/&gt;</code> and
+                    <code>&lt;number-lit/&gt;</code> tags.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">&quot;Hi!&quot; # This is a string literal
+</pre>
+                </div>
+
+                <p>Is a shorthand for:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;text</span><span style="color: #a6e22e">-lit</span> <span style="color: #a6e22e">body=</span><span style="color: #e6db74">&quot;Hi!&quot;</span><span style="color: #f92672">/&gt;</span>
+</pre>
+                </div>
+
+                <p>While:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">[2] # This is a number literal
+</pre>
+                </div>
+                <p>Is a shorthand for:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;number</span><span style="color: #a6e22e">-lit</span> <span style="color: #a6e22e">value=</span><span style="color: #e6db74">&quot;2&quot;</span><span style="color: #f92672">/&gt;</span>
+</pre>
+                </div>
+
+                <span class="anchor" id="variables"></span>
+                <h3 id="variables">Variables</h3>
+                <p>
+                    Variables are declared using the <code>var</code> tag
+                    and can be assigned values using the
+                    <code>set</code> tag.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;var</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;foo&quot;</span> <span style="color: #a6e22e">type=</span><span style="color: #e6db74">&quot;string&quot;</span><span style="color: #f92672">/&gt;</span>
+<span style="color: #f92672">&lt;set</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;foo&quot;</span><span style="color: #f92672">&gt;</span>
+    &quot;Hello&quot;
+<span style="color: #f92672">&lt;/set&gt;</span>
+</pre>
+                </div>
+
+                <h3 id="constants">Constants</h3>
+                <p>Constants are planned for the future, stay tuned!</p>
+                </section>
+            </div>
+
+            <div class="content-section" id="arithmetic">
+                <h2>Expressionism</h2>
+                <hr>
+                <span class="anchor" id="operative-tags"></span>
+                <h3>Operative Tags</h3>
+                <p>
+                    Operative tags are used for arithmetic operations. Each
+                    operative tag only accepts a certain number of tags in
+                    its body depending on the operation.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output&gt;</span>
+    <span style="color: #f92672">&lt;negate&gt;</span>
+        [2]
+    <span style="color: #f92672">&lt;/negate&gt;</span>
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>This displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">-2
+</pre>
+                </div>
+                <p>
+                    And:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;output&gt;</span>
+    <span style="color: #f92672">&lt;add&gt;</span>
+        [3]
+        [4]
+    <span style="color: #f92672">&lt;/add&gt;</span>
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>displays:</p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">7
+</pre>
+                </div>
+
+                <span class="anchor" id="auto-operative-tags"></span>
+                <h3>Auto-Operative Tags</h3>
+                <p>
+                    Auto-Operative tags automatically assume their body is
+                    an expression and try to obtain the result of it.
+                    Examples of auto-operative tags include
+                    <code>var</code>, <code>condition</code>,
+                    <code>return</code>, and <code>set</code>.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;var</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span> <span style="color: #a6e22e">type=</span><span style="color: #e6db74">&quot;number&quot;</span><span style="color: #f92672">&gt;</span>
+    <span style="color: #f92672">&lt;add&gt;</span>
+        [2]
+        [5]
+    <span style="color: #f92672">&lt;/add&gt;</span>
+<span style="color: #f92672">&lt;/var&gt;</span>
+</pre>
+                </div>
+
+                <p>
+                    This declares the variable
+                    <code>auto-operation</code> with a value of 7.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;set</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">&gt;</span>
+    <span style="color: #f92672">&lt;multiply&gt;</span>
+        [7]
+        [8]
+    <span style="color: #f92672">&lt;/multiply&gt;</span>
+<span style="color: #f92672">&lt;/set&gt;</span>
+</pre>
+                </div>
+
+                <p>Now the value of <code>auto-operation</code> is 56.</p>
+            </div>
+            <div class="content-section" id="control-flow">
+                <h2>Control</h2>
+                <hr>
+                <h3 id="if-elif-else">If / Elif / Else</h3>
+                <p>
+                    Control flow in TagScript is managed using
+                    <code>if</code>, <code>elif</code>, and
+                    <code>else</code> tags. Each <code>if</code>/<code>elif</code>
+                    tag must have a <code>condition</code> tag, which is
+                    auto-operative. The result of the expression in the
+                    <code>condition</code> tag must be a boolean.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;if&gt;</span>
+    <span style="color: #f92672">&lt;condition&gt;</span>
+        <span style="color: #f92672">&lt;compare&gt;</span>
+            <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">/&gt;</span>
+            [56]
+        <span style="color: #f92672">&lt;/compare&gt;</span>
+    <span style="color: #f92672">&lt;/condition&gt;</span>
+    <span style="color: #f92672">&lt;output&gt;</span>
+        &quot;The number is 56!&quot;
+    <span style="color: #f92672">&lt;/output&gt;</span>
+<span style="color: #f92672">&lt;/if&gt;</span>
+<span style="color: #f92672">&lt;elif&gt;</span>
+    <span style="color: #f92672">&lt;condition&gt;</span>
+        <span style="color: #f92672">&lt;compare&gt;</span>
+            <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">/&gt;</span>
+            [54]
+        <span style="color: #f92672">&lt;/compare&gt;</span>
+    <span style="color: #f92672">&lt;/condition&gt;</span>
+    <span style="color: #f92672">&lt;output&gt;</span>
+        &quot;The number is 54!&quot;
+    <span style="color: #f92672">&lt;/output&gt;</span>
+<span style="color: #f92672">&lt;/elif&gt;</span>
+<span style="color: #f92672">&lt;else&gt;</span>
+    <span style="color: #f92672">&lt;output&gt;</span>
+        &quot;Could not recognize the number!&quot;
+    <span style="color: #f92672">&lt;/output&gt;</span>
+<span style="color: #f92672">&lt;/else&gt;</span>
+</pre>
+                </div>
+
+                <h3 id="while">While</h3>
+                <p>
+                    The <code>while</code> tag executes a piece of code
+                    until the condition is no longer true.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;while&gt;</span>
+    <span style="color: #f92672">&lt;condition&gt;</span>
+        <span style="color: #f92672">&lt;negate&gt;</span>
+            <span style="color: #f92672">&lt;compare&gt;</span>
+                <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">/&gt;</span>
+                [100]
+            <span style="color: #f92672">&lt;/compare&gt;</span>
+        <span style="color: #f92672">&lt;/negate&gt;</span>
+    <span style="color: #f92672">&lt;/condition&gt;</span>
+    
+    <span style="color: #f92672">&lt;set</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">&gt;</span>
+        <span style="color: #f92672">&lt;add&gt;</span>
+            <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span><span style="color: #f92672">/&gt;</span>
+            [1]
+        <span style="color: #f92672">&lt;/add&gt;</span>
+    <span style="color: #f92672">&lt;/set&gt;</span>
+<span style="color: #f92672">&lt;/while&gt;</span>
+</pre>
+                </div>
+
+                <p>
+                    This will add 1 to <code>auto-operation</code> until it
+                    is equal to 100.
+                </p>
+
+                <h3 id="for">For</h3>
+                <p>
+                    For loops are planned for the future, stay tuned!
+                </p>
+            </div>
+
+            <div class="content-section" id="functions">
+                <h2>Functions</h2>
+                <hr>
+                <h3 id="builtin-functions">Built-In Functions</h3>
+                <p>
+                    Built-In functions are planned for the future, stay tuned!
+                </p>
+
+                <h3 id="user-defined-functions">User defined Functions</h3>
+                <p>
+                    User defined Functions are planned for the future, stay tuned!
+                </p>
+            </div>
+
+            <div class="content-section" id="error-handling">
+                <h2>Error Handling</h2>
+                <hr>
+                <h3 id="try-catch">Try / Catch</h3>
+                <p>
+                    Error handling in TagScript is managed using
+                    <code>try</code> and <code>catch</code> tags. If
+                    something goes wrong in the <code>try</code> block, the
+                    <code>catch</code> block gets executed. You can also
+                    save the error message if you want to.
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"><span style="color: #f92672">&lt;var</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;errormsg&quot;</span> <span style="color: #a6e22e">type=</span><span style="color: #e6db74">&quot;string&quot;</span><span style="color: #f92672">/&gt;</span>
+
+<span style="color: #f92672">&lt;try&gt;</span>
+    # Unsafe code
+    <span style="color: #f92672">&lt;input</span> <span style="color: #a6e22e">save-to=</span><span style="color: #e6db74">&quot;auto-operation&quot;</span> <span style="color: #a6e22e">prompt=</span><span style="color: #e6db74">&quot;PLEASE type a number&quot;</span><span style="color: #f92672">/&gt;</span>
+    <span style="color: #f92672">&lt;output&gt;</span>
+        &quot;Thanks!&quot;
+    <span style="color: #f92672">&lt;/output&gt;</span>
+<span style="color: #f92672">&lt;/try&gt;</span>
+<span style="color: #f92672">&lt;catch</span> <span style="color: #a6e22e">save-to=</span><span style="color: #e6db74">&quot;errormsg&quot;</span><span style="color: #f92672">&gt;</span>
+    <span style="color: #f92672">&lt;output&gt;</span>
+        &quot;Why didn&#39;t you type a number :(&quot;
+        &quot;This is the error you caused!:&quot;
+        <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;errormsg&quot;</span><span style="color: #f92672">/&gt;</span>
+    <span style="color: #f92672">&lt;/output&gt;</span>
+<span style="color: #f92672">&lt;/catch&gt;</span>
+</pre>
+                </div>
+
+
+                <h3 id="error-format">Error Format</h3>
+                <p>
+                    If you don't handle possible unsafe code with a try / catch block or just make a mistake while
+                    programming, you'll run into <code>interpreting exceptions</code>, for example:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%"># Declare the variable
+<span style="color: #f92672">&lt;var</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;MyNum&quot;</span> <span style="color: #a6e22e">type=</span><span style="color: #e6db74">&quot;number&quot;</span><span style="color: #f92672">/&gt;</span>
+
+# Now get the user input
+<span style="color: #f92672">&lt;input</span> <span style="color: #a6e22e">save-to=</span><span style="color: #e6db74">&quot;MyNum&quot;</span> <span style="color: #a6e22e">prompt=</span><span style="color: #e6db74">&quot;Please type a number: &quot;</span> <span style="color: #a6e22e">no-autobreak</span><span style="color: #f92672">/&gt;</span>
+
+# Output the number
+<span style="color: #f92672">&lt;output</span> <span style="color: #a6e22e">no-autobreak</span><span style="color: #f92672">&gt;</span>
+    &quot;Your number is: &quot;
+    <span style="color: #f92672">&lt;get</span> <span style="color: #a6e22e">name=</span><span style="color: #e6db74">&quot;MyNum&quot;</span><span style="color: #f92672">/&gt;</span>
+<span style="color: #f92672">&lt;/output&gt;</span>
+</pre>
+                </div>
+
+                <p>
+                    This piece of code looks innocent enough, but when we try to run it:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: rgb(255, 55, 132); border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">### FATAL ###
+i: nummer is not valid datatype
+ERR-4003: ATTRIBUTE VALUE ERROR
+| AT LINE 2 : COLUMN 2
+|0000| # Declare the variable
+|0001| &lt;var name=&quot;MyNum&quot; type=&quot;nummer&quot;/&gt;
+        ^^^
+</pre>
+                </div>
+                <p>
+                    TagScript has its own exception system to assure the programmer has the most information available
+                    when trying to debug the program, so let's break down the format of an exception.<br><br>
+                    <strong>Exception Type: </strong>In this case, as we can see in the first line, it's
+                    <strong>fatal</strong> exception, there also are 'warnings' and 'info' although they are currently
+                    not implemented.<br>
+                    <strong>Error Information: </strong>A little bit more specific than the error code, while the error
+                    code tells us that it was an attribute error, the error information tells us that is has something
+                    to do with the 'type' attribute, as it's the only one that has the value
+                    <strong>nummer</strong>.<br>
+                    <strong>Error Code: </strong>Serves the purpose of being the identifier of the error, you can look
+                    up the error number on this documentation to see common causes and solutions.<br>
+                    <strong>Source code visual: </strong>Depending on the error, this visual may or may not be present,
+                    but it is very useful for pinpointing the error source, in this case, line 2 at the 'var'
+                    tag.<br><br>
+                    Thanks to all this, we can now see that the error was that we misspelled 'number' as 'nummer'. We
+                    fix this mistake and now we see the intended output:
+                </p>
+                <!-- HTML generated using hilite.me -->
+                <div
+                    style="background: #272822; overflow:auto;width:auto;padding:.3em .6em; color: white; border-radius: 5px;">
+                    <pre style="margin: 0; line-height: 125%">Please type a number: 8
+Your number is: 8
+</pre>
+                </div>
+
+                <h3 id="internal-errors">Internal Errors</h3>
+                <p>
+                    Internal errors are formatted as <code>IMODULENAME_ERROR</code> at the beginning of the error code.
+                    These errors are <strong>not</strong> the fault of the programmer. If you encounter one without
+                    having made
+                    any modifications to the interpreter, you should report it immediately as a GitHub issue, including
+                    the
+                    source code that triggered the error.
+                </p>
+                <p>
+                    If you are modifying the interpreter, these errors indicate a failure in the correct implementation
+                    of
+                    certain features. For example, this might occur if you bind a tag as operative but do not assign it
+                    an operative type.
+                </p>
+
+            </div>
+        </div>
+    </div>
+</body>
+
 </html>

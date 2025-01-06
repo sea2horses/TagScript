@@ -99,7 +99,8 @@ static class TagxExceptions {
                         break;
                     }
                 }
- 
+
+                Console.WriteLine('\n'); 
                 Console.WriteLine($"### {exType} ###");
                 Console.WriteLine($"i: {infoMessage}");
                 Console.WriteLine($"ERR-{errorNumber}: {errorMessage}");
@@ -109,8 +110,8 @@ static class TagxExceptions {
                     Console.WriteLine($"| AT LINE {lineColumn.Item1} : COLUMN {lineColumn.Item2}");
                     string[] sourceLines = SourceCode.Split('\n');
                     // Print 2 lines before if they exist
-                    for(int i = Math.Max(lineColumn.Item1 - 2, 0); i <= lineColumn.Item1; i++) {
-                        Console.WriteLine($"|{i:0000}| {sourceLines[i - 1]}");
+                    for(int i = Math.Max(lineColumn.Item1 - 3, 0); i < lineColumn.Item1; i++) {
+                        Console.WriteLine($"|{i:0000}| {sourceLines[i]}");
                     }
                     // Print the arrow that points
                     Console.Write("       ");

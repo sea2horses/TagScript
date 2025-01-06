@@ -1,0 +1,151 @@
+@use 'include/scrollbars' as scrollbars
+    
+$topbar-height: 100px
+$sidebar-width: 300px
+
+*
+    box-sizing: border-box
+
+@mixin d-flex($justify, $align, $direction: row)
+    display: flex
+    justify-content: $justify
+    align-items: $align
+    flex-direction: $direction
+
+body
+    margin: 0px
+    font-family: 'Inter', sans-serif
+    width: 100vw
+    height: 100vh
+
+.page-content
+    $header-color: rgb(39, 39, 39)
+    $header-separator-color: rgb(86, 243, 47)
+    $focus-color: rgb(77, 77, 77)
+
+    $list-separator-color: rgb(77, 77, 77)
+
+    display: grid
+    width: 100%
+    height: 100%
+
+    grid-template-columns: $sidebar-width 1fr
+    grid-template-rows: $topbar-height 1fr
+
+    .header
+        grid-column-start: 1
+        grid-column-end: 4
+
+        background-color: $header-color
+        height: $topbar-height
+
+        @include d-flex(space-between, center)
+
+        padding: 0px 50px
+        color: white
+
+        border-bottom: 3px solid $header-separator-color
+
+        .branding
+            @include d-flex(flex-start, baseline)
+            h1
+                margin-right: 20px
+
+        .navbar
+            $item-width: 100%
+
+            display: flex
+            justify-content: center
+
+            width: 50%
+            height: 100%
+
+            a
+                @include d-flex(center, center)
+                height: 100%
+                width: $item-width
+                text-decoration: none
+                color: inherit
+
+                border-left: 1px solid $list-separator-color
+
+                &:last-child
+                    border-right: 1px solid $list-separator-color
+                
+                &:hover
+                    background-color: $focus-color
+
+                span
+                    width: 100%
+                    text-align: center
+        
+    .sidebar
+
+        // Font sizes
+        $header-size: 25px
+        $elem-size: 15px
+
+        // Colors
+        $sidebar-color: rgb(56, 56, 56)
+
+        background-color: $sidebar-color
+        padding: 10px 0px
+
+        overflow-y: scroll
+        color: white
+
+        @include scrollbars.scrollbar(12px, gray)
+
+        .sidebar-header
+            padding: 10px 20px
+            margin: 0px
+
+            font-size: $header-size
+            border-bottom: 1px solid $list-separator-color
+
+        .sidebar-list
+            font-size: $elem-size
+
+            @include d-flex(center, center, column)
+
+            margin-bottom: 20px
+
+            a
+                color: inherit
+                text-decoration: none
+                background-color: inherit
+
+                width: 100%
+                height: 100%
+
+                padding: 15px 40px
+
+                &:hover
+                    background-color: $focus-color
+
+    .main
+        $main-color: rgb(240, 240, 240)
+        $section-color: rgb(255, 255, 255)
+
+        background-color: $main-color
+        overflow-y: scroll
+
+        @include scrollbars.scrollbar(12px, gray)
+
+        .content-section
+            $code-color: white
+            $code-bg-color: #272822
+
+            background-color: $section-color
+
+            padding: 20px 50px
+            margin: 50px
+
+            box-shadow: 0px 0px 15px gray
+            border-radius: 5px
+
+            p code
+                color: $code-color
+                background-color: $code-bg-color
+                padding: 2px
+                border-radius: 5px

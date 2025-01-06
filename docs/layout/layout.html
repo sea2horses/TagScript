@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <link rel="stylesheet" href="../genericstyle.css"/>
+
+        <!-- Script that sets the mood -->
+        <script type="module">
+            import { get_header, get_sidebar } from './layout.js';
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const header_container = document.querySelector('.header');
+                header_container.innerHTML = get_header();
+
+                const sidebar_container = document.querySelector('.sidebar');
+                sidebar_container.innerHTML = get_sidebar();
+            });
+        </script>
+    </head>
+    <body>
+        <!-- Basic Layout of the page -->
+        <div class="page-content">
+            <div class="header"></div>
+            <div class="sidebar"></div>
+            <div class="main">
+                <!-- Content goes here -->
+            </div>
+        </div>
+    </body>
+</html>

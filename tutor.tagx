@@ -1,0 +1,226 @@
+# In TagScript, this is the basic syntax of a tag:
+
+# <ex foo="bar">
+#   Body goes here...
+# </ex>
+
+# This is a tag with name 'ex', that defines an attribute of 'foo'
+# with a value of 'bar'
+# <ex ...> is the opening tag
+# </ex> is the closing tag
+# Everything between the opening and the closing tag is the body
+
+# There's also self closing tags, for tags that don't require a body
+# <ex foo="bar"/> is equivalent to <ex foo="bar"></ex>
+
+# Attributes are a way to pass information to the tag on how the
+# tag should be executed
+
+# Ex:
+<output>
+    "Hello "
+    "World!"
+</output>
+
+# Outputs
+# Hello
+# World!
+
+# While:
+<output no-autobreak>
+    "Hello "
+    "World!"
+</output>
+
+# Outputs
+# Hello World!
+
+# This is because the 'output' tag accepts the no-autobreak attribute
+# which tells it to not add a line break after each tag it prints
+
+# no-autobreak is a self-declared attribute, meaning that it doesn't need a value
+# an example of a non-self-declared attribute is:
+# <var name="foo" type="string"/>
+
+# This tag declares a variable and uses the information passed through the 'name'
+# and 'type' attributes to create it.
+
+# There are optional and required tags, for example:
+# <var name="foo"/>
+# Would cause an exception since 'var' needs a 'type' attribute to execute
+# correctly
+
+# Nesting is TagScript's way of inserting content directly into a tag, for example
+<var name="foo" type="string">
+    "Hi!"
+</var>
+# Will directly insert the string literal "Hi!" into the value of the variable
+# 'foo'
+
+# And by the same nesting principles, we can insert the value of 'foo' into an
+# output tag by using the 'get' tag:
+<output>
+    <get name="foo"/>
+</output>
+
+# Outputs
+# Hi!
+
+# The 3 data types in TagScript are:
+#   string
+#   number
+#   boolean
+
+# And since everything in TagScript is tags, "" and [] are shorthands for the
+# <text-lit/> and <number-lit/> tags
+
+# "Hi!" <- This is a string literal
+# Is a shorthand for:
+# <text-lit body="Hi!"/> <- This is a literal text tag
+
+# and
+
+# [2] <- This is a number literal
+# Is a shorthand for:
+# <number-lit value="2"/> <- This is a literal number tag
+
+# Constants are planned for the future, stay tuned!
+
+# Arithmetic in TagScript is done using 'operative tags'
+# Each operative tag only accepts a certain number of tags in it
+# depending of the operation
+
+<output>
+    <negate> # Negate Tag
+        [2] # Number Literal
+    </negate>
+</output>
+
+# Outputs:
+# -2
+
+# The negate tag only accepts one argument, while the add tag for example:
+
+<output>
+    <add>
+        [3]
+        [4]
+    </add>
+</output>
+
+# Outputs:
+# 7
+
+# You can also use expression tags as arguments on operative tags
+# like <get/> or <input/>
+
+# (Expression tags are tags that return an expression)
+
+# Thanks to operative tags, we also get something called Auto-Operative tags
+# which are tags that will automatically assume their body is an expression
+# and try to obtain the result of it, for example
+
+<var name="auto-operation" type="number">
+    <add>
+        [2]
+        [5]
+    </add>
+</var>
+
+# Will declare the variable auto-operation with a value of 7
+# Auto-Operative tags include <var/> <condition/> <return/> and <set/>
+
+# Another example, we can change the value of the variable with set
+<set name="auto-operation">
+    <multiply>
+        [7]
+        [8]
+    </multiply>
+</set>
+
+# Now the value of auto-operation is 56
+
+# We also have if / elif / else controls, very self explanatory
+<if>
+    <condition>
+        <compare>
+            <get name="auto-operation"/>
+            [56]
+        </compare>
+    </condition>
+
+    <output>
+        "The number is 56!"
+    </output>
+</if>
+<elif>
+    <condition>
+        <compare>
+            <get name="auto-operation"/>
+            [54]
+        </compare>
+    </condition>
+
+    <output>
+        "The number is 54!"
+    </output>
+</elif>
+<else>
+    <output>
+        "Could not recognize the number!"
+    </output>
+</else>
+
+# Each if/elif tag must have a <condition></condition> tag
+# which is auto-operative, the result of the expression in the condition
+# tag MUST be a boolean, else an error will show up.
+
+# That's why <compare></compare> was used,
+# this tag compares two values and returns true if they're equal
+# and false if they're not
+
+# While
+# Just executes a piece of code until the condition isn't true anymore
+<while>
+    <condition>
+        <negate>
+            <compare>
+                <get name="auto-operation"/>
+                [100]
+            </compare>
+        </negate>
+    </condition>
+    
+    <set name="auto-operation">
+        <add>
+            <get name="auto-operation"/>
+            [1]
+        </add>
+    </set>
+</while>
+
+# This will add 1 to auto-operation until it is equal to 100
+
+# Finally, there's TRY-CATCH
+# Error handling in TagScript, if something goes wrong in try,
+# catch gets executed
+
+# You can also save the error message if you want to
+<var name="errormsg" type="string"/>
+
+<try>
+    # Unsafe code
+    <input save-to="auto-operation" prompt="PLEASE type a number"/>
+    <output>
+        "Thanks!"
+    </output>
+</try>
+<catch save-to="errormsg'>
+    <output>
+        "Why didn't you type a number :("
+        "This is the error you caused!:"
+        <get name="errormsg"/>
+    </output>
+</catch>
+
+# User defined and builtin functions coming soon!

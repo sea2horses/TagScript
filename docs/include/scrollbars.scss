@@ -1,0 +1,25 @@
+@use 'sass:color';
+
+@mixin scrollbar($size, $foreground-color, $background-color: color.mix($foreground-color, white,  50%)) {
+  // For Internet Explorer
+  & {
+    scrollbar-face-color: $foreground-color;
+    scrollbar-track-color: $background-color;
+  }
+  // For Google Chrome
+  &::-webkit-scrollbar {
+    width:  $size;
+    height: $size;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $foreground-color;
+    &:hover {
+      background: color.mix($foreground-color, black, 10%);
+    }
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $background-color;
+  }
+}

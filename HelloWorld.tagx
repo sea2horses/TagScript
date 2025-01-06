@@ -1,4 +1,11 @@
-# Number rounding program
-
+# Declare the variable
 <var name="MyNum" type="number"/>
-<var name="ErrMsg" type="string"/>
+
+# Now get the user input
+<input save-to="MyNum" prompt="Please type a number: " no-autobreak/>
+
+# Output the number
+<output no-autobreak>
+    "Your number is: "
+    <get name="MyNum"/>
+</output>

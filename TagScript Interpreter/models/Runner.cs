@@ -758,7 +758,8 @@ namespace TagScript.models {
                     return result;
                 }
                 // Else, let's throw an error
-                throw new Exception($"Function {functionName} does not exist");
+                throw TagxExceptions.RaiseException(6001, $"Function '{functionName}' doesn't exist",
+                    ExceptionType.FATAL, functionTag.Position, functionTag.TagName.Length);
             }
 
             public void RunTryCatch(Tag tryTag, Tag catchTag, List<Variable> scope) {
