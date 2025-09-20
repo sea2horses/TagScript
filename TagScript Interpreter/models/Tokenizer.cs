@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using TagScript.main;
 using TagScript.models.exceptions;
 
@@ -154,8 +156,10 @@ namespace TagScript.models {
                 if(ch.Equals('#')) {
                     Program.TagxDebug.LogLine("Starting commented out");
                     // While a newline isn't found, it will all be commented out
-                    while(!ch.Equals('\n') && Position < SourceCode.Length) {
+                    while(!ch.Equals('\n')) {
                         Pass();
+                        if (Position >= SourceCode.Length)
+                            break;
                         ch = SourceCode[Position];
                     }
                     // Handle it if it exists

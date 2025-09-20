@@ -31,8 +31,9 @@ static class Program {
     }
 
     static void Main(string[] args) {
-        string sourceCode = "<output>\"Hello World!\"</output>";
-        if(args.Length != 0) {
+        string sourceCode = "<output>\"A .tagx file was not provided, using example hello world:\"\"Hello World!\"</output>";
+        if (args.Length != 0)
+        {
             FileStream fStream = new FileStream(args[0], FileMode.Open);
             StreamReader reader = new StreamReader(fStream);
 
@@ -42,7 +43,7 @@ static class Program {
             fStream.Close();
         }
 
-        Console.WriteLine($"Source Code: \n{sourceCode}");
+        Debug.WriteLine($"Source Code: \n{sourceCode}");
         TagxExceptions.SourceCode = sourceCode;
 
         try {
@@ -51,31 +52,43 @@ static class Program {
 
             Console.WriteLine("Tokenizing Output:\n");
             foreach(Token token in tokenList) {
-                Console.WriteLine(token);
+                Debug.WriteLine(token);
             }
 
             TagParser tagParser = new(tokenList);
-            Console.WriteLine("\n\nTag Parsing Output:\n");
+            #if DEBUG
+            Debug.WriteLine("\n\nTag Parsing Output:\n");
+            #endif
             List<Tag> tagList = tagParser.ParseList();
             Tag masterTag = new Tag("program", tagList);
 
-            Console.WriteLine("\n\nTag Tree:");
-            TagFormatter.DisplayTag(masterTag); 
+            #if DEBUG
+            Debug.WriteLine("\n\nTag Tree:");
+            TagFormatter.DisplayTag(masterTag);
+            #endif
 
-            Console.WriteLine("\n\nRunner Output:");
+            #if DEBUG
+            Debug.WriteLine("\n\nRunner Output:");
+            #endif
             TagScriptInterpreter tagx = new(masterTag);
 
             tagx.Run();
 
-            Console.WriteLine("\n\nVariable dump:");
+            #if DEBUG
+            Debug.WriteLine("\n\nVariable dump:");
             foreach(Variable var in tagx.variables) {
-                Console.WriteLine(var);
+                Debug.WriteLine(var);
             }
+            #endif
         } catch(Exception ex) {
             Console.WriteLine('\n');
             Console.WriteLine($"Code interpreting has stopped due to an exception");
             Console.ForegroundColor = ConsoleColor.Red;
-            if(ex.Message != string.Empty) Console.WriteLine(ex.Message);
+            #if DEBUG
+            if(ex.Message != string.Empty) Console.WriteLine(ex);
+            #else
+            if(ex.Message != String.Empty) Console.WriteLine(ex.Message);
+            #endif
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine($"\nWould you like to open the documentation? (Y/n)");
             if( (Console.ReadLine() ?? "").ToUpper() == "Y" ) {
@@ -83,7 +96,7 @@ static class Program {
                     // Thanks a lot BERZ in StackOverflow :33
                     // https://stackoverflow.com/questions/10989709/open-a-html-file-using-default-web-browser
                     var p = new Process();
-                    p.StartInfo = new ProcessStartInfo(@"docs\index.html")
+                    p.StartInfo = new ProcessStartInfo(@"docs/index.html")
                     {
                         UseShellExecute = true
                     };

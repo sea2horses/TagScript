@@ -8,12 +8,12 @@
     <input prompt="Enter second number:" save-to="num2"/>
 
     # Perform the operation
-    <eval save-to="result">
+    <set save-to="result">
         <add>
             <get name="num1"/>
             <get name="num2"/>
         </add>
-    </eval>
+    </set>
 
     # Output the result
     <output>

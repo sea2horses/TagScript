@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 using TagScript.main;
 using TagScript.models.exceptions;
@@ -17,7 +18,7 @@ namespace TagScript.models {
                 throw TagxExceptions.RaiseException(2000, $"Expected token of type '{type}' but got '{tokenList[Position].Type}'",
                     ExceptionType.FATAL);
             
-            Console.WriteLine($"Ate a token of type: {type} at position: {Position}. Yummy!");
+            Debug.WriteLine($"Ate a token of type: {type} at position: {Position}. Yummy!");
             
             // Increase the position on list
             Position++;

@@ -215,7 +215,7 @@
         "Thanks!"
     </output>
 </try>
-<catch save-to="errormsg'>
+<catch save-to="errormsg">
     <output>
         "Why didn't you type a number :("
         "This is the error you caused!:"
