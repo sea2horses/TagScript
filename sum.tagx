@@ -8,7 +8,7 @@
     <input prompt="Enter second number:" save-to="num2"/>
 
     # Perform the operation
-    <set save-to="result">
+    <set name="result">
         <add>
             <get name="num1"/>
             <get name="num2"/>

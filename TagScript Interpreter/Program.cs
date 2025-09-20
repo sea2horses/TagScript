@@ -11,7 +11,7 @@ static class Program {
 
     static class RunInformation {
         static private HashSet<string> Flags = [];
-        static private string? File = null;
+        // static private string? File = null;
         static public string SourceCode = "";
 
         static public bool FlagExists(string flagName)
@@ -50,10 +50,12 @@ static class Program {
             Tokenizer tokenizer = new(sourceCode);
             List<Token> tokenList = tokenizer.Parse();
 
+            #if DEBUG
             Console.WriteLine("Tokenizing Output:\n");
             foreach(Token token in tokenList) {
                 Debug.WriteLine(token);
             }
+            #endif
 
             TagParser tagParser = new(tokenList);
             #if DEBUG
