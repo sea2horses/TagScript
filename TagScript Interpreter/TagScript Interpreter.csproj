@@ -9,5 +9,6 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tsi</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 </Project>

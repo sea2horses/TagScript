@@ -129,6 +129,7 @@ namespace TagScript.models {
             while(IsIdentifierFriendly(ch) && Position < SourceCode.Length) {
                 identifierName += ch;
                 Pass();
+                if(Position >= SourceCode.Length) break;
                 ch = SourceCode[Position];
             }
             // Return the name read

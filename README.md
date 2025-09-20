@@ -68,3 +68,9 @@ And such, now you should be able to run `tsi [file.tagx]`!
 To uninstall the tool, run
 
 <code>dotnet tool uninstall --global TagScript_Interpreter</code>
+
+## Updating
+
+If you run TagScript with the first method (no install) you'll just have to pull from the repository, in case you have already installed it, you must pull from the repository (or re-clone) and run this command inside it:
+
+<code>dotnet tool update --global --add-source "./TagScript Interpreter/nupkg" TagScript_Interpreter</code>

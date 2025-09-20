@@ -95,14 +95,17 @@ static class Program {
             Console.WriteLine($"\nWould you like to open the documentation? (Y/n)");
             if( (Console.ReadLine() ?? "").ToUpper() == "Y" ) {
                 try {
+                    string url = "https://sea2horses.github.io/TagScript/";
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                    // HTML Documentation is deprecated
                     // Thanks a lot BERZ in StackOverflow :33
                     // https://stackoverflow.com/questions/10989709/open-a-html-file-using-default-web-browser
-                    var p = new Process();
-                    p.StartInfo = new ProcessStartInfo(@"docs/index.html")
-                    {
-                        UseShellExecute = true
-                    };
-                    p.Start();
+                    // var p = new Process();
+                    // p.StartInfo = new ProcessStartInfo(@"docs/index.html")
+                    // {
+                    //     UseShellExecute = true
+                    // };
+                    // p.Start();
                 } catch(Exception ex2) {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"Documentation could not be opened: {ex2.Message}");
